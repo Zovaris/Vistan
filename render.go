@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/base64"
 	"fmt"
 	"html"
 	"io"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -117,18 +120,16 @@ func renderTerminal(d *Doc, t Template, source string, color bool, w io.Writer) 
 func inline(s string) string {
 	s = html.EscapeString(s)
 	if !strings.Contains(s, "`") {
-		return s
+		return emphasis(s)
 	}
 	parts := strings.Split(s, "`")
 	var b strings.Builder
-	b.WriteString(parts[0])
-	for i := 1; i < len(parts); i++ {
+	for i, part := range parts {
 		if i%2 == 1 {
-			b.WriteString("<code>")
-		} else {
-			b.WriteString("</code>")
+			b.WriteString("<code>" + part + "</code>")
+			continue
 		}
-		b.WriteString(parts[i])
+		b.WriteString(emphasis(part))
 	}
 	if len(parts)%2 == 0 {
 		b.WriteString("</code>")
@@ -136,7 +137,59 @@ func inline(s string) string {
 	return b.String()
 }
 
-func renderBody(b *strings.Builder, lines []string) {
+var (
+	boldText  = regexp.MustCompile(`\*\*([^*]+)\*\*`)
+	linkText  = regexp.MustCompile(`\[([^\]]+)\]\(([^)\s]+)\)`)
+	imageLine = regexp.MustCompile(`^!\[([^\]]*)\]\(([^)\s]+)\)\s*$`)
+)
+
+func emphasis(s string) string {
+	s = boldText.ReplaceAllString(s, "<strong>$1</strong>")
+	s = linkText.ReplaceAllStringFunc(s, func(m string) string {
+		groups := linkText.FindStringSubmatch(m)
+		if !safeURL(groups[2]) {
+			return m
+		}
+		return `<a href="` + groups[2] + `">` + groups[1] + `</a>`
+	})
+	return s
+}
+
+func safeURL(u string) bool {
+	lower := strings.ToLower(u)
+	for _, prefix := range []string{"http://", "https://", "mailto:", "#", "/", "./", "../"} {
+		if strings.HasPrefix(lower, prefix) {
+			return true
+		}
+	}
+	return !strings.Contains(u, ":")
+}
+
+var imageMimes = map[string]string{
+	"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg",
+	"gif": "image/gif", "webp": "image/webp", "avif": "image/avif", "svg": "image/svg+xml",
+}
+
+func imageSrc(src, baseDir string) string {
+	lower := strings.ToLower(src)
+	if strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://") || strings.HasPrefix(lower, "data:") {
+		return html.EscapeString(src)
+	}
+	if baseDir == "" {
+		return html.EscapeString(src)
+	}
+	b, err := os.ReadFile(filepath.Join(baseDir, src))
+	if err != nil || len(b) > 3<<20 {
+		return html.EscapeString(src)
+	}
+	mime, ok := imageMimes[strings.ToLower(strings.TrimPrefix(filepath.Ext(src), "."))]
+	if !ok {
+		return html.EscapeString(src)
+	}
+	return "data:" + mime + ";base64," + base64.StdEncoding.EncodeToString(b)
+}
+
+func renderBody(b *strings.Builder, lines []string, baseDir string) {
 	inList := false
 	inFence := false
 
@@ -169,6 +222,14 @@ func renderBody(b *strings.Builder, lines []string) {
 			level := len(indentOnly.FindString(line)) / 2
 			text := strings.TrimSpace(bulletLine.ReplaceAllString(line, ""))
 			fmt.Fprintf(b, "<li style=\"--l:%d\">%s</li>\n", level, inline(text))
+		case imageLine.MatchString(line):
+			closeList()
+			m := imageLine.FindStringSubmatch(line)
+			fmt.Fprintf(b, "<figure><img src=\"%s\" alt=\"%s\">", imageSrc(m[2], baseDir), html.EscapeString(m[1]))
+			if m[1] != "" {
+				fmt.Fprintf(b, "<figcaption>%s</figcaption>", html.EscapeString(m[1]))
+			}
+			b.WriteString("</figure>\n")
 		case strings.TrimSpace(line) == "":
 			closeList()
 		default:
@@ -210,7 +271,7 @@ copy.addEventListener('click', async () => {
 </script>
 `
 
-func renderHTML(d *Doc, t Template, source string) string {
+func renderHTML(d *Doc, t Template, source, baseDir string) string {
 	var b strings.Builder
 
 	title := d.Title
@@ -221,11 +282,11 @@ func renderHTML(d *Doc, t Template, source string) string {
 	b.WriteString("<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n")
 	fmt.Fprintf(&b, "<title>%s</title>\n", html.EscapeString(title))
-	b.WriteString("<style>\n" + pageCSS + "</style>\n</head>\n<body>\n<main>\n")
+	b.WriteString("<style>\n" + pageCSS + "</style>\n</head>\n<body class=\"tpl-" + t.Name + "\">\n<main>\n")
 	fmt.Fprintf(&b, "<h1>%s</h1>\n", html.EscapeString(title))
 	fmt.Fprintf(&b, "<p class=\"src\">%s</p>\n", html.EscapeString(source))
 
-	renderBody(&b, trimBlank(d.Intro))
+	renderBody(&b, trimBlank(d.Intro), baseDir)
 
 	selection := t.Name == "selection"
 	if selection {
@@ -242,7 +303,7 @@ func renderHTML(d *Doc, t Template, source string) string {
 			if len(body) == 0 {
 				b.WriteString("<p class=\"empty\">no description</p>\n")
 			} else {
-				renderBody(&b, body)
+				renderBody(&b, body, baseDir)
 			}
 			b.WriteString("</div>\n</section>\n")
 			continue
@@ -263,7 +324,7 @@ func renderHTML(d *Doc, t Template, source string) string {
 		if len(body) == 0 {
 			b.WriteString("<p class=\"empty\">no content</p>\n")
 		} else {
-			renderBody(&b, body)
+			renderBody(&b, body, baseDir)
 		}
 		b.WriteString("</section>\n")
 	}
@@ -342,6 +403,14 @@ fieldset.opts { border: 0; padding: 0; margin: 36px 0 0; }
 .answer button:disabled { opacity: 0.35; cursor: default; }
 .hint { margin: 10px 0 0; color: var(--muted); font-size: 0.78rem;
   font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif; }
+
+figure { margin: 16px 0; }
+figure img { display: block; max-width: 100%; height: auto;
+  border: 1px solid var(--rule); border-radius: 3px; }
+figcaption { margin-top: 6px; color: var(--muted); font-size: 0.75rem;
+  font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif; }
+.tpl-diagram main { width: min(46rem, calc(100vw - 2.5rem)); }
+.tpl-diagram pre { font-size: 0.92rem; padding: 22px 24px; }
 
 @media (max-width: 560px) { main { padding: 48px 0 64px; } h1 { font-size: 1.7rem; } }
 @media (prefers-color-scheme: dark) {

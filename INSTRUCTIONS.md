@@ -98,9 +98,9 @@ For a decision:
   --exclude-standard`, so your own `.gitignore` decides what counts. Outside a repo it
   walks the tree and skips `node_modules`, `.git`, `vendor`, `dist`, `build`, `target`,
   `.next`, `out`, `__pycache__`, `.venv`, `venv`, `.idea`, `.cache`, `coverage`.
-- **Overview.** File count, total size, lines counted, and the top languages by lines.
-- **Tree.** Directories first with their file counts, `--depth` levels deep (default 2),
-  a maximum of 13 entries per directory and `N more` for the rest.
+- **Overview.** File count, total size, lines counted and a bar chart of the top languages by lines.
+- **Tree.** Directories first with their file count and size, `--depth` levels deep
+  (default 2), a maximum of 13 entries per directory and `N more` for the rest.
 - **Entry points.** `package.json` with its scripts, `go.mod` module, `Cargo.toml` and
   `pyproject.toml` names, `Makefile` targets, and the presence of `Dockerfile`,
   `compose.yaml` or `flake.nix`.
@@ -108,6 +108,20 @@ For a decision:
 
 Lines are only counted for known text extensions under 2MB, so a repository full of
 binaries does not stall the scan. A 150-file project takes about 60ms.
+
+## What the renderer understands
+
+A deliberate subset, not full Markdown:
+
+- One `# ` title, `## ` sections, paragraphs, and bullet lists indented two spaces per level.
+- Fenced code blocks, shown in a bordered monospace box with horizontal scroll.
+- Inline `` `code` ``, `**bold**`, and `[links](https://example.com)`. Links are only
+  rendered for `http`, `https`, `mailto`, `#` and relative paths.
+- Images: `![caption](path.png)` is inlined into the page as a data URI, so the HTML stays
+  self-contained and works without the original file next to it. Anything over 3MB is left
+  as a plain reference.
+
+Anything else stays literal text, which is why a broken document still renders.
 
 ## How it looks
 

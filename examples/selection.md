@@ -4,6 +4,8 @@
 
 Today every run writes to `$TMPDIR/vistan` and opens a new tab. To revisit an old page, one of these has to become true.
 
+![Three places the pages could live](assets/options.svg)
+
 ## Keep them in TMPDIR
 
 What happens now. Each run writes `<name>.html` and opens it.
@@ -15,6 +17,13 @@ What happens now. Each run writes `<name>.html` and opens it.
 ## A `.vistan/` folder in the project
 
 Pages sit next to the code and can be committed or ignored.
+
+```
+project/
+├── .vistan/
+│   └── plan.html
+└── src/
+```
 
 - Reopen and compare across branches
 - You have to decide git or `.gitignore`

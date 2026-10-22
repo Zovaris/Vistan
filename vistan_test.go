@@ -88,7 +88,7 @@ func TestMissing(t *testing.T) {
 }
 
 func TestHTMLPlanHasSectionsAndFooter(t *testing.T) {
-	html := renderHTML(parse(t, planDoc), tpl(t, "plan"), "examples/plan.md")
+	html := renderHTML(parse(t, planDoc), tpl(t, "plan"), "examples/plan.md", "")
 	if got := strings.Count(html, "<section>"); got != 4 {
 		t.Fatalf("sections = %d, want 4", got)
 	}
@@ -101,7 +101,7 @@ func TestHTMLPlanHasSectionsAndFooter(t *testing.T) {
 }
 
 func TestHTMLIncomplete(t *testing.T) {
-	html := renderHTML(parse(t, "# T\n\n## Decisions\n- one\n"), tpl(t, "plan"), "x.md")
+	html := renderHTML(parse(t, "# T\n\n## Decisions\n- one\n"), tpl(t, "plan"), "x.md", "")
 	if !strings.Contains(html, "Missing or empty: Rejected") {
 		t.Fatalf("warning missing: %s", html)
 	}
@@ -109,7 +109,7 @@ func TestHTMLIncomplete(t *testing.T) {
 
 func TestHTMLEscapesContent(t *testing.T) {
 	d := parse(t, "# T\n\n## Decisions\n\n- <script>alert(1)</script> & `x`\n")
-	html := renderHTML(d, tpl(t, "plan"), "x.md")
+	html := renderHTML(d, tpl(t, "plan"), "x.md", "")
 	if strings.Contains(html, "<script>alert") {
 		t.Fatalf("raw script survived")
 	}
@@ -123,7 +123,7 @@ func TestHTMLEscapesContent(t *testing.T) {
 
 func TestSelectionPage(t *testing.T) {
 	d := parse(t, "# Pick\n\n## First\n- a\n\n## Second\n- b\n")
-	html := renderHTML(d, tpl(t, "selection"), "x.md")
+	html := renderHTML(d, tpl(t, "selection"), "x.md", "")
 	if got := strings.Count(html, `type="radio"`); got != 3 {
 		t.Fatalf("radios = %d, want 3", got)
 	}
@@ -167,9 +167,40 @@ func TestScanProject(t *testing.T) {
 
 func TestNestedBullets(t *testing.T) {
 	d := parse(t, "# M\n\n## Modules\n\n- top\n  - child\n")
-	html := renderHTML(d, tpl(t, "map"), "x.md")
+	html := renderHTML(d, tpl(t, "map"), "x.md", "")
 	if !strings.Contains(html, `<li style="--l:1">child</li>`) {
 		t.Fatalf("nested level missing: %s", html)
+	}
+}
+
+func TestInlineMarkup(t *testing.T) {
+	got := inline("**bold** and [link](https://example.com) and `code`")
+	if !strings.Contains(got, "<strong>bold</strong>") {
+		t.Fatalf("bold missing: %s", got)
+	}
+	if !strings.Contains(got, `<a href="https://example.com">link</a>`) {
+		t.Fatalf("link missing: %s", got)
+	}
+	if !strings.Contains(got, "<code>code</code>") {
+		t.Fatalf("code missing: %s", got)
+	}
+	if strings.Contains(inline("[x](javascript:alert(1))"), "<a ") {
+		t.Fatalf("javascript link was rendered")
+	}
+}
+
+func TestImageInlined(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "shot.png"), []byte("\x89PNG\r\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	d := parse(t, "# T\n\n![a shot](shot.png)\n")
+	html := renderHTML(d, tpl(t, "plan"), "x.md", dir)
+	if !strings.Contains(html, "data:image/png;base64,") {
+		t.Fatalf("image not inlined")
+	}
+	if !strings.Contains(html, "<figcaption>a shot</figcaption>") {
+		t.Fatalf("caption missing")
 	}
 }
 

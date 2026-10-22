@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="140" viewBox="0 0 600 140" role="img" aria-label="Three places the pages could live">
+  <style>
+    .box { fill: #fffdf6; stroke: #d2ccbf; }
+    .t { font-family: Georgia, serif; font-size: 15px; fill: #1b1a17; }
+    .s { font-family: -apple-system, Helvetica, sans-serif; font-size: 10px; fill: #625e55; }
+  </style>
+  <rect x=".5" y=".5" width="599" height="139" rx="4" fill="none" stroke="#e3ddcd"/>
+  <text class="s" x="18" y="22">three places the pages could live</text>
+  <rect class="box" x="18" y="34" width="170" height="74" rx="3"/>
+  <text class="t" x="34" y="64">TMPDIR</text>
+  <text class="s" x="34" y="86">gone after a cleanup</text>
+  <rect class="box" x="215" y="34" width="170" height="74" rx="3"/>
+  <text class="t" x="231" y="64">.vistan/</text>
+  <text class="s" x="231" y="86">lives with the code</text>
+  <rect class="box" x="412" y="34" width="170" height="74" rx="3"/>
+  <text class="t" x="428" y="64">~/.vistan/</text>
+  <text class="s" x="428" y="86">index of past pages</text>
+</svg>

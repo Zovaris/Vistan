@@ -140,7 +140,7 @@ func show(command string, args []string) int {
 	}
 
 	var lines []string
-	var source, name string
+	var source, name, baseDir string
 
 	if src == "-" {
 		if err := readLines(os.Stdin, &lines); err != nil {
@@ -161,6 +161,7 @@ func show(command string, args []string) int {
 		}
 		source = src
 		name = pageName(strings.TrimSuffix(filepath.Base(src), ".md"))
+		baseDir = filepath.Dir(src)
 	}
 
 	if templateName == "" {
@@ -182,7 +183,7 @@ func show(command string, args []string) int {
 		return renderTerminal(doc, tpl, source, color, os.Stdout)
 	}
 
-	return serveDoc(doc, tpl, source, name)
+	return serveDoc(doc, tpl, source, name, baseDir)
 }
 
 func runMap(args []string) int {
@@ -222,7 +223,7 @@ func runMap(args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
 	}
-	return serveDoc(doc, tpl, path, pageName(filepath.Base(abs)))
+	return serveDoc(doc, tpl, path, pageName(filepath.Base(abs)), "")
 }
 
 func pageName(s string) string {
@@ -242,14 +243,14 @@ func pageName(s string) string {
 	return out
 }
 
-func serveDoc(doc *Doc, tpl Template, source, name string) int {
+func serveDoc(doc *Doc, tpl Template, source, name, baseDir string) int {
 	cache := cacheDir()
 	if err := os.MkdirAll(cache, 0o755); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
 	}
 	out := filepath.Join(cache, name+".html")
-	if err := os.WriteFile(out, []byte(renderHTML(doc, tpl, source)), 0o644); err != nil {
+	if err := os.WriteFile(out, []byte(renderHTML(doc, tpl, source, baseDir)), 0o644); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
 	}

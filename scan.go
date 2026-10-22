@@ -171,17 +171,29 @@ func overviewLines(files []scannedFile, stats map[string]*extStat, source string
 	}
 	sort.Slice(ranked, func(i, j int) bool { return ranked[i].s.lines > ranked[j].s.lines })
 	if len(ranked) > 0 {
-		var parts []string
+		lines = append(lines, "", "```")
 		for i, p := range ranked {
-			if i == 4 {
+			if i == 5 {
 				break
 			}
 			pct := 100 * p.s.lines / max(totalLines, 1)
-			parts = append(parts, fmt.Sprintf("%s %d%%", p.ext, pct))
+			label := fmt.Sprintf("%d%%", pct)
+			if pct == 0 {
+				label = "<1%"
+			}
+			width := max(pct*24/100, 1)
+			lines = append(lines, fmt.Sprintf("%-5s %-24s %4s", p.ext, strings.Repeat("█", width), label))
 		}
-		lines = append(lines, "- "+strings.Join(parts, " · "))
+		lines = append(lines, "```")
 	}
 	return lines
+}
+
+func plural(n int, word string) string {
+	if n == 1 {
+		return fmt.Sprintf("1 %s", word)
+	}
+	return fmt.Sprintf("%d %ss", n, word)
 }
 
 type treeNode struct {
@@ -189,6 +201,7 @@ type treeNode struct {
 	dirs  map[string]*treeNode
 	files []string
 	count int
+	size  int64
 }
 
 func buildTree(files []scannedFile) *treeNode {
@@ -197,6 +210,7 @@ func buildTree(files []scannedFile) *treeNode {
 		parts := strings.Split(filepath.ToSlash(f.rel), "/")
 		node := root
 		node.count++
+		node.size += f.size
 		for _, dir := range parts[:len(parts)-1] {
 			child := node.dirs[dir]
 			if child == nil {
@@ -204,6 +218,7 @@ func buildTree(files []scannedFile) *treeNode {
 				node.dirs[dir] = child
 			}
 			child.count++
+			child.size += f.size
 			node = child
 		}
 		node.files = append(node.files, parts[len(parts)-1])
@@ -253,7 +268,7 @@ func walkTree(n *treeNode, prefix string, depth, maxDepth int, out *[]string) {
 		}
 		if e.isDir {
 			child := n.dirs[e.name]
-			*out = append(*out, fmt.Sprintf("%s%s%s/ (%d)", prefix, branch, e.name, child.count))
+			*out = append(*out, fmt.Sprintf("%s%s%s/ (%s, %s)", prefix, branch, e.name, plural(child.count, "file"), humanSize(child.size)))
 			if depth+1 < maxDepth {
 				walkTree(child, prefix+next, depth+1, maxDepth, out)
 			}
