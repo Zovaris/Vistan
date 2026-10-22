@@ -9,6 +9,7 @@
 - Templates live as embedded `.md` files, so the binary installs its own content.
 - `serve` re-executes itself in a new session, so the page outlives the command that opened it.
 - `map` draws its own SVG treemap instead of shipping an image or a chart library.
+- `graph` lays out an edge list as inline SVG, and `docs` builds the decision index from the files themselves.
 
 ## Rejected
 
@@ -22,7 +23,9 @@
 - [x] Parse sections, lists, images and subheads with one parser.
 - [x] Serve pages from a detached local server.
 - [x] Draw a treemap for `map` and index every generated page.
-- [ ] Decide where the generated pages live.
+- [x] Keep the last N pages in the user state directory, pruned after each write.
+- [x] Group the history by project and add `open` and `rm`.
+- [x] Draw an edge list as a graph, and index a folder of ADRs and specs.
 
 ## Files
 
@@ -30,17 +33,19 @@
 + doc.go
 + render.go
 + scan.go
-+ index.go
-~ main.go  wires map, index and stop
++ graph.go  the edge list to SVG
++ docs.go  the ADR and spec index
++ index.go  history, open and rm
+~ main.go  wires map, docs, history and stop
 ~ INSTRUCTIONS.md
 - vistan  the bash script, replaced by the binary
 ```
 
 ## Verification
 
-- [x] `go test ./...`: 19 checks, green.
+- [x] `go test ./...`: 40 checks, green.
 - [x] `go vet` and `gofmt -l` clean.
-- [x] The seven example pages answer 200 in the browser.
+- [x] The ten example pages answer 200 in the browser.
 - [ ] Try the copy button in Safari, not just Chromium.
 
 > [!WARN] The server has no auth
@@ -48,5 +53,5 @@
 
 ## Your move
 
-- Decide whether generated pages belong in `.vistan/` inside the project or in the cache.
-- Decide if `diagram` should stay ASCII or accept a drawn format.
+- Decide whether `graph` should read links between ADRs, so the decision log draws its own supersession arrows.
+- Decide if retention should be per project, so a noisy repository cannot evict another one's pages.

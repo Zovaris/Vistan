@@ -15,7 +15,10 @@ vistan new <template> > page.md     # start from the template
 vistan serve page.md                # build, serve and open the page
 vistan <page.md>                    # same document in the terminal
 vistan map <path>                   # scan a directory into a map page
-vistan history                      # every saved page, newest first
+vistan docs [path]                  # index every ADR and spec into one page
+vistan history                      # saved pages, grouped by project
+vistan open <name>                  # reopen a saved page by name or prefix
+vistan rm <name>                    # delete saved pages
 vistan templates                    # list template names
 vistan brief                        # this file
 vistan stop                         # stop the local server
@@ -25,8 +28,8 @@ vistan stop                         # stop the local server
 survives the command. Pass the URL to the human; do not describe the page instead.
 
 Pages are kept between runs in the user state directory and the oldest are pruned
-when there are more than 50. `vistan history` lists them by day and project, so a page
-from an hour ago is one command away.
+when there are more than 50. `vistan history` groups them by project with a count and
+the last time each project wrote one, so a page from an hour ago is one command away.
 
 ## Pick the template
 
@@ -39,6 +42,8 @@ from an hour ago is one command away.
 | `adr` | one decision that must stay recorded, with context, options and consequences |
 | `changelog` | what changed per release, grouped by version |
 | `diagram` | a flow or a layout that prose makes slower to understand |
+| `graph` | named things and the arrows between them; the `## Graph` section is an edge list |
+| `spec` | a change proposed before it is built: problem, proposal, decisions, open questions |
 | `map` | orienting someone in a codebase; `vistan map` fills it by itself |
 
 Declare the template with the first line of the document: `<!-- vistan: plan -->`.
@@ -68,6 +73,16 @@ code                       a code block
 ````
 
 `###` inside a section is a small subheading.
+
+## The graph and the decision log
+
+A `graph` document is an edge list, one arrow per line: `web --> api`. Node labels are
+`api [API server]`, edge labels are `api --> queue : async`. Do not draw the graph by
+hand; write the edges and let the page lay them out.
+
+For a folder of ADRs or specs, do not build an index by hand: `vistan docs <path>`
+renders each record and writes the index by status, with the counts. Use it after adding
+or editing a record.
 
 ## The review workflow
 

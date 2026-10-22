@@ -10,7 +10,7 @@ person using it.
 ## Why
 
 Chat output is a transcript. A plan, a summary or a decision has a shape, and the
-shape is what makes it readable. vistan takes a document that follows one of eight
+shape is what makes it readable. vistan takes a document that follows one of ten
 shapes, checks it is complete, and renders it.
 
 `vistan brief` prints the instructions for the agent that writes those pages, so an
@@ -37,8 +37,11 @@ go build -o vistan .
 vistan <file.md>                 # print in the terminal
 vistan serve <file.md>           # build the page, start the server, open it
 vistan map [path] [--depth N]    # scan a directory and serve its map
-vistan history                   # the saved pages, newest first, with links
+vistan docs [path]               # index every ADR and spec under a directory
+vistan history                   # the saved pages, grouped by project
 vistan index                     # same as history
+vistan open <name>               # reopen a saved page by name or prefix
+vistan rm <name>                 # delete saved pages
 vistan brief                     # the instructions for the agent that writes pages
 vistan stop                      # stop the server
 vistan new <template>            # print a template to stdout
@@ -78,7 +81,9 @@ the file. That is the hook an agent can check before showing you anything.
 | `selection` | one section per option | asking you to pick, with a copyable answer |
 | `map` | Overview, Tree, Entry points, Largest files | orienting someone in a codebase |
 | `diagram` | Context, Diagram, Reading | showing a flow or a layout |
+| `graph` | Context, Graph, Reading | boxes and arrows between named things, drawn as SVG |
 | `adr` | Status, Context, Decision, Consequences (plus Options considered and Links) | recording why a design choice was made |
+| `spec` | Status, Problem, Proposal, Decisions (plus Open questions and Links) | proposing a change before it is built |
 | `changelog` | one section per release, `### Added` / Changed / Fixed / Removed inside | telling users what changed in a release |
 | `review` | one section per finding, named `F1 · Blocker · path:42`, plus Tests and Notes | showing several reviewers' findings, with a decision per finding |
 
@@ -92,10 +97,10 @@ starts with a marker:
 That marker is how `vistan serve examples/map.md` knows which shape to draw; there is
 no flag to remember. `--template` exists only to override it.
 
-`plan`, `summary`, `map`, `diagram` and `adr` are validated: a missing or empty
-section turns the footer into a warning and makes the terminal exit with `1`.
-`selection` and `changelog` are free form, because their section names carry the
-content.
+`plan`, `summary`, `map`, `diagram`, `graph`, `adr` and `spec` are validated: a
+missing or empty section turns the footer into a warning and makes the terminal exit
+with `1`. `selection` and `changelog` are free form, because their section names carry
+the content.
 
 `###` subheadings are allowed inside any section; `changelog` uses them for the
 change groups, and `adr` gets its status rendered as a chip whose colour follows the
@@ -152,14 +157,22 @@ writes `index.html` with the same list, and serves it at the root URL. It is how
 get back to a page you generated an hour ago without remembering its name:
 
 ```
-8 pages · 1 project  http://127.0.0.1:8765/
-  00:54  review    vistan  Review: the treemap and the index   http://.../review.html
-  00:54  plan      vistan  vistan: a page a human reads        http://.../plan.html
+6 pages · 2 projects  http://127.0.0.1:8765/
+vistan  4 pages · last today 14:32
+  14:32  review    Review: the treemap and the index   http://.../review.html
+  14:32  plan      vistan: a page a human reads        http://.../plan.html
+fizza   2 pages · last 20 Oct
+  11:04  adr       ADR: serve pages over HTTP           http://.../adr.html
 ```
 
-The page groups entries by day (`Today`, `Yesterday`, then the date) and shows the
-project each page came from, which is the nearest directory with a `.git`. The project
-column is dropped when every page belongs to the same project.
+The page groups entries by project, newest activity first, with a count and the last
+time each project generated something. The project is the nearest directory with a
+`.git`, not the directory the command ran in, so a page built from `examples/` still
+belongs to the repository.
+
+`vistan open treemap` reopens the one page whose name contains that, and refuses when
+the name matches several. `vistan rm` deletes pages and rewrites `index.html`, so the
+list never links to a file that is gone.
 
 ## The map command
 
@@ -184,6 +197,41 @@ column is dropped when every page belongs to the same project.
 
 Lines are only counted for known text extensions under 2MB, so a repository full of
 binaries does not stall the scan. A 150-file project takes about 60ms.
+
+## The graph page
+
+A `graph` document draws its `## Graph` section as SVG, from an edge list:
+
+```
+web --> api
+api --> db
+api --> queue : async
+api [API server]
+```
+
+Each line is an edge (`-->`, `->`, `=>` or `→`); the text after ` : ` is the edge
+label; a line with only a name and `[label]` names a node. Nodes are placed in layers
+by following the arrows, so the drawing comes from the edges and not from coordinates
+nobody wants to maintain. An edge that points back up is drawn dashed around the right
+margin, because a loop is not a hierarchy. Arrowheads are an SVG marker and the
+colours are the page's own variables, so dark mode works. The page is 52rem wide and
+nothing is fetched: the SVG is inline, like the treemap.
+
+## The decisions index
+
+`vistan docs <path>` walks a directory, takes every `.md` that declares
+`<!-- vistan: adr -->` or `<!-- vistan: spec -->` — or that has both a `Status` and a
+`Decision` section — renders each into its own page, and writes `decisions.html`:
+records grouped by status, newest first inside each group, with kind, date and source
+path.
+
+The status is the first word of the `## Status` section; the date is whatever follows an
+em dash, `|` or `·`, and falls back to the file's modification time. Groups run
+accepted, approved, proposed, draft, rejected, superseded, deprecated, then anything
+else. `templates/` and the usual build directories are skipped, so the template that
+starts every document is not indexed as a record.
+
+Exit `1` when nothing matches, `2` when the directory cannot be read.
 
 ## What the renderer understands
 
