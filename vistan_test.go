@@ -187,6 +187,12 @@ func TestInlineMarkup(t *testing.T) {
 	if strings.Contains(inline("[x](javascript:alert(1))"), "<a ") {
 		t.Fatalf("javascript link was rendered")
 	}
+	if got := inline("**`file://` plus a shim**"); !strings.Contains(got, "<strong><code>file://</code> plus a shim</strong>") {
+		t.Fatalf("bold around code = %s", got)
+	}
+	if got := inline("`a **b** c`"); !strings.Contains(got, "<code>a **b** c</code>") {
+		t.Fatalf("bold inside code = %s", got)
+	}
 }
 
 func TestImageInlined(t *testing.T) {
@@ -225,6 +231,59 @@ func TestDeclaredTemplate(t *testing.T) {
 	}
 	if got := DeclaredTemplate([]string{"# T"}); got != "" {
 		t.Fatalf("declared = %q, want empty", got)
+	}
+}
+
+func TestSelectionOptionWithImageAndCode(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "shot.png"), []byte("\x89PNG\r\n"), 0o644)
+	d := parse(t, "# Pick\n\n## A\n\n![shot](shot.png)\n\n```\ncode here\n```\n")
+	html := renderHTML(d, tpl(t, "selection"), "x.md", dir)
+	if !strings.Contains(html, "data:image/png;base64,") {
+		t.Fatalf("option image not inlined")
+	}
+	if !strings.Contains(html, "<pre><code>\ncode here") {
+		t.Fatalf("option code block missing")
+	}
+}
+
+func TestChangelogReleases(t *testing.T) {
+	d := parse(t, "# Changelog\n\n## Unreleased\n\n### Added\n\n- one\n\n## 1.0.0\n\n### Fixed\n\n- two\n")
+	html := renderHTML(d, tpl(t, "changelog"), "x.md", "")
+	if !strings.Contains(html, "<h3>Added</h3>") || !strings.Contains(html, "<h3>Fixed</h3>") {
+		t.Fatalf("changelog subheads missing")
+	}
+	if !strings.Contains(html, `class="release is-unreleased"`) {
+		t.Fatalf("unreleased marker missing")
+	}
+	if strings.Contains(html, `<span>1</span>`) {
+		t.Fatalf("changelog shows bullet counts")
+	}
+}
+
+func TestAdrStatusChip(t *testing.T) {
+	d := parse(t, "# ADR\n\n## Status\n\naccepted\n\n## Context\n\nx\n\n## Decision\n\ny\n\n## Consequences\n\n- z\n")
+	html := renderHTML(d, tpl(t, "adr"), "x.md", "")
+	if !strings.Contains(html, `class="status is-accepted"`) {
+		t.Fatalf("status chip class missing")
+	}
+}
+
+func TestTreemapArtifact(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, "lib"), 0o755)
+	os.WriteFile(filepath.Join(dir, "lib", "util.go"), []byte("package lib\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n"), 0o644)
+
+	doc, err := scanProject(dir, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(doc.Artifact, "<svg") || !strings.Contains(doc.Artifact, "lib") {
+		t.Fatalf("treemap artifact missing: %q", doc.Artifact)
+	}
+	if html := renderHTML(doc, tpl(t, "map"), "x", ""); !strings.Contains(html, `<div class="art">`) {
+		t.Fatalf("treemap not rendered into the page")
 	}
 }
 

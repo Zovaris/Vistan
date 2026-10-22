@@ -102,10 +102,22 @@ func renderTerminal(d *Doc, t Template, source string, color bool, w io.Writer) 
 		}
 
 		for _, line := range body {
-			if fenceLine.MatchString(line) {
+			trimmed := strings.TrimSpace(line)
+			switch {
+			case fenceLine.MatchString(line):
 				continue
+			case strings.HasPrefix(trimmed, "### "):
+				fmt.Fprintf(w, "    %s%s%s\n", paint(ansiDim), strings.TrimSpace(trimmed[4:]), paint(ansiReset))
+			case imageLine.MatchString(line):
+				m := imageLine.FindStringSubmatch(line)
+				label := m[1]
+				if label == "" {
+					label = m[2]
+				}
+				fmt.Fprintf(w, "  %s▣ %s%s\n", paint(ansiDim), label, paint(ansiReset))
+			default:
+				fmt.Fprintf(w, "  %s\n", line)
 			}
-			fmt.Fprintf(w, "  %s\n", line)
 		}
 	}
 
@@ -117,42 +129,40 @@ func renderTerminal(d *Doc, t Template, source string, color bool, w io.Writer) 
 	return 0
 }
 
-func inline(s string) string {
-	s = html.EscapeString(s)
-	if !strings.Contains(s, "`") {
-		return emphasis(s)
-	}
-	parts := strings.Split(s, "`")
-	var b strings.Builder
-	for i, part := range parts {
-		if i%2 == 1 {
-			b.WriteString("<code>" + part + "</code>")
-			continue
-		}
-		b.WriteString(emphasis(part))
-	}
-	if len(parts)%2 == 0 {
-		b.WriteString("</code>")
-	}
-	return b.String()
-}
-
 var (
-	boldText  = regexp.MustCompile(`\*\*([^*]+)\*\*`)
-	linkText  = regexp.MustCompile(`\[([^\]]+)\]\(([^)\s]+)\)`)
-	imageLine = regexp.MustCompile(`^!\[([^\]]*)\]\(([^)\s]+)\)\s*$`)
+	inlineToken = regexp.MustCompile("`([^`]+)`|\\*\\*([^*]+)\\*\\*|\\[([^\\]]+)\\]\\(([^)\\s]+)\\)")
+	imageLine   = regexp.MustCompile(`^!\[([^\]]*)\]\(([^)\s]+)\)\s*$`)
 )
 
-func emphasis(s string) string {
-	s = boldText.ReplaceAllString(s, "<strong>$1</strong>")
-	s = linkText.ReplaceAllStringFunc(s, func(m string) string {
-		groups := linkText.FindStringSubmatch(m)
-		if !safeURL(groups[2]) {
-			return m
+func inline(s string) string { return inlineEscaped(html.EscapeString(s)) }
+
+func inlineEscaped(s string) string {
+	matches := inlineToken.FindAllStringSubmatchIndex(s, -1)
+	if len(matches) == 0 {
+		return s
+	}
+
+	var b strings.Builder
+	last := 0
+	for _, m := range matches {
+		b.WriteString(s[last:m[0]])
+		switch {
+		case m[2] >= 0:
+			b.WriteString("<code>" + s[m[2]:m[3]] + "</code>")
+		case m[4] >= 0:
+			b.WriteString("<strong>" + inlineEscaped(s[m[4]:m[5]]) + "</strong>")
+		case m[6] >= 0:
+			href := s[m[8]:m[9]]
+			if safeURL(html.UnescapeString(href)) {
+				b.WriteString(`<a href="` + href + `">` + s[m[6]:m[7]] + `</a>`)
+			} else {
+				b.WriteString(s[m[0]:m[1]])
+			}
 		}
-		return `<a href="` + groups[2] + `">` + groups[1] + `</a>`
-	})
-	return s
+		last = m[1]
+	}
+	b.WriteString(s[last:])
+	return b.String()
 }
 
 func safeURL(u string) bool {
@@ -214,6 +224,10 @@ func renderBody(b *strings.Builder, lines []string, baseDir string) {
 		case inFence:
 			b.WriteString(html.EscapeString(line))
 			b.WriteString("\n")
+		case strings.HasPrefix(strings.TrimSpace(line), "### "):
+			closeList()
+			label := strings.TrimSpace(strings.TrimSpace(line)[4:])
+			fmt.Fprintf(b, "<h3>%s</h3>\n", inline(label))
 		case bulletLine.MatchString(line):
 			if !inList {
 				b.WriteString("<ul>\n")
@@ -241,6 +255,23 @@ func renderBody(b *strings.Builder, lines []string, baseDir string) {
 		b.WriteString("</code></pre>\n")
 	}
 	closeList()
+}
+
+func statusClass(body []string) string {
+	text := strings.ToLower(strings.Join(body, " "))
+	for _, status := range []string{"accepted", "proposed", "rejected", "superseded", "deprecated"} {
+		if strings.Contains(text, status) {
+			return "is-" + status
+		}
+	}
+	return "is-unknown"
+}
+
+func unreleasedClass(name string) string {
+	if strings.Contains(strings.ToLower(name), "unreleased") {
+		return " is-unreleased"
+	}
+	return ""
 }
 
 const selectionScript = `<div class="answer">
@@ -287,6 +318,11 @@ func renderHTML(d *Doc, t Template, source, baseDir string) string {
 	fmt.Fprintf(&b, "<p class=\"src\">%s</p>\n", html.EscapeString(source))
 
 	renderBody(&b, trimBlank(d.Intro), baseDir)
+	if d.Artifact != "" {
+		b.WriteString("<div class=\"art\">")
+		b.WriteString(d.Artifact)
+		b.WriteString("</div>\n")
+	}
 
 	selection := t.Name == "selection"
 	if selection {
@@ -315,8 +351,19 @@ func renderHTML(d *Doc, t Template, source, baseDir string) string {
 				items++
 			}
 		}
-		b.WriteString("<section>\n")
-		if items > 0 {
+		class := ""
+		switch t.Name {
+		case "adr":
+			if i == 0 {
+				class = ` class="status ` + statusClass(body) + `"`
+			} else {
+				class = ` class="record"`
+			}
+		case "changelog":
+			class = ` class="release` + unreleasedClass(s.Name) + `"`
+		}
+		fmt.Fprintf(&b, "<section%s>\n", class)
+		if items > 0 && t.Name != "changelog" {
 			fmt.Fprintf(&b, "<h2>%s <span>%d</span></h2>\n", inline(s.Name), items)
 		} else {
 			fmt.Fprintf(&b, "<h2>%s</h2>\n", inline(s.Name))
@@ -404,24 +451,62 @@ fieldset.opts { border: 0; padding: 0; margin: 36px 0 0; }
 .hint { margin: 10px 0 0; color: var(--muted); font-size: 0.78rem;
   font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif; }
 
+h3 { margin: 20px 0 6px; font-size: 0.72rem; font-weight: 500; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted);
+  font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif; }
+h3:first-child { margin-top: 4px; }
+.art { margin: 22px 0 8px; }
+.art svg { display: block; width: 100%; height: auto; }
+.art text { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  fill: var(--ink); fill-opacity: 0.78; }
+.art text.sub { fill-opacity: 0.42; }
+.art .tm rect { stroke: var(--paper); stroke-width: 1.5; }
+.art .tm-c0 rect { fill: #b4713d; }
+.art .tm-c1 rect { fill: #7f8f56; }
+.art .tm-c2 rect { fill: #6d7f9c; }
+.art .tm-c3 rect { fill: #a76a80; }
+.art .tm-c4 rect { fill: #b39445; }
+.art .tm-c5 rect { fill: #5e8c85; }
+.art .tm-d0 rect { fill-opacity: 0.3; }
+.art .tm-d1 rect { fill-opacity: 0.16; }
 figure { margin: 16px 0; }
 figure img { display: block; max-width: 100%; height: auto;
   border: 1px solid var(--rule); border-radius: 3px; }
 figcaption { margin-top: 6px; color: var(--muted); font-size: 0.75rem;
   font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif; }
+.opt .desc figure { margin: 12px 0; }
 .tpl-diagram main { width: min(46rem, calc(100vw - 2.5rem)); }
-.tpl-diagram pre { font-size: 0.92rem; padding: 22px 24px; }
+.tpl-diagram pre { font-size: 0.92rem; padding: 22px 24px; line-height: 1.35;
+  background-color: transparent; border-radius: 4px;
+  background-image: radial-gradient(circle, var(--rule) 1px, transparent 1px);
+  background-size: 16px 16px; background-position: 8px 8px; }
+.tpl-diagram section:first-of-type pre { padding: 30px 28px; }
 
-.tpl-adr section:first-of-type { border-top: 0; margin-top: 14px; padding-top: 0; }
-.tpl-adr section:first-of-type h2 { display: none; }
-.tpl-adr section:first-of-type p { display: inline-block; margin: 0; padding: 2px 11px;
+.tpl-adr section.status { border-top: 0; margin-top: 14px; padding-top: 0; }
+.tpl-adr section.status h2 { display: none; }
+.tpl-adr section.status p { display: inline-block; margin: 0; padding: 2px 11px;
   border: 1px solid var(--rule); border-radius: 999px; font-size: 0.78rem; color: var(--muted);
   font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif; }
-.tpl-adr section:first-of-type strong { font-weight: 500; }
+.tpl-adr section.status strong { font-weight: 500; }
+.tpl-adr .is-accepted p { color: #33623f; border-color: #b6cdb9; background: #eaf1e6; }
+.tpl-adr .is-rejected p { color: #8a3b2c; border-color: #dcc0b6; background: #f6e9e2; }
+.tpl-adr .is-proposed p { color: #7a5620; border-color: #ddcbaa; background: #f6efdf; }
+.tpl-adr .is-superseded p, .tpl-adr .is-deprecated p { text-decoration: line-through; }
+.tpl-adr .record h2 { font-style: normal; }
+
+.tpl-changelog h2 { font-style: normal; font-size: 1.15rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: -0.01em; }
+.tpl-changelog .release.is-unreleased h2 { color: var(--muted); }
+.tpl-changelog ul { margin-top: 0; }
 
 @media (max-width: 560px) { main { padding: 48px 0 64px; } h1 { font-size: 1.7rem; } }
 @media (prefers-color-scheme: dark) {
   :root { --paper: #13120e; --ink: #e7e1d3; --muted: #a49c88; --rule: #2a2720; --field: #1a1813; }
+  .art .tm-d0 rect { fill-opacity: 0.5; }
+  .art .tm-d1 rect { fill-opacity: 0.3; }
+  .tpl-adr .is-accepted p { color: #a8c8a8; border-color: #33452f; background: #1b241a; }
+  .tpl-adr .is-rejected p { color: #d8a295; border-color: #4a302a; background: #261a17; }
+  .tpl-adr .is-proposed p { color: #d6bd8a; border-color: #453a24; background: #221f16; }
   code { background: #221f18; }
   pre { background: #191712; }
   footer .warn { color: #d09a6a; }

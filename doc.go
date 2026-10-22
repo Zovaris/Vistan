@@ -15,6 +15,7 @@ type Doc struct {
 	Title    string
 	Intro    []string
 	Sections []Section
+	Artifact string
 }
 
 var (
@@ -102,7 +103,7 @@ var templateList = []Template{
 	{"summary", []string{"What changed", "Verification", "Pending"}, "Summary complete"},
 	{"selection", nil, "Decision complete"},
 	{"map", []string{"Overview", "Tree", "Entry points", "Largest files"}, "Map complete"},
-	{"diagram", nil, "Diagram complete"},
+	{"diagram", []string{"Context", "Diagram", "Reading"}, "Diagram complete"},
 	{"adr", []string{"Status", "Context", "Decision", "Consequences"}, "Decision record complete"},
 	{"changelog", nil, "Changelog complete"},
 }
