@@ -175,11 +175,11 @@ func keepPages(dir string) {
 	cutoff := time.Now().AddDate(0, 0, -days)
 	for i, p := range pages {
 		if limit > 0 && i >= limit {
-			os.Remove(filepath.Join(dir, p.name))
+			removePage(dir, p.name)
 			continue
 		}
 		if days > 0 && p.mod.Before(cutoff) {
-			os.Remove(filepath.Join(dir, p.name))
+			removePage(dir, p.name)
 		}
 	}
 }
@@ -281,7 +281,7 @@ func show(command string, args []string) int {
 		return renderTerminal(doc, tpl, source, color, os.Stdout)
 	}
 
-	return serveDoc(doc, tpl, source, name, baseDir)
+	return serveDoc(doc, tpl, source, name, baseDir, lines)
 }
 
 func runMap(args []string) int {
@@ -321,7 +321,7 @@ func runMap(args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
 	}
-	return serveDoc(doc, tpl, path, pageName(filepath.Base(abs)), "")
+	return serveDoc(doc, tpl, path, pageName(filepath.Base(abs)), "", nil)
 }
 
 func pageName(s string) string {
@@ -341,14 +341,24 @@ func pageName(s string) string {
 	return out
 }
 
-func serveDoc(doc *Doc, tpl Template, source, name, baseDir string) int {
+func writePage(dir, name, content string, lines []string) error {
+	if err := os.WriteFile(filepath.Join(dir, name+".html"), []byte(content), 0o644); err != nil {
+		return err
+	}
+	if len(lines) == 0 {
+		return nil
+	}
+	source := strings.Join(lines, "\n") + "\n"
+	return os.WriteFile(filepath.Join(dir, name+".md"), []byte(source), 0o644)
+}
+
+func serveDoc(doc *Doc, tpl Template, source, name, baseDir string, lines []string) int {
 	cache := stateDir()
 	if err := os.MkdirAll(cache, 0o755); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
 	}
-	out := filepath.Join(cache, name+".html")
-	if err := os.WriteFile(out, []byte(renderHTML(doc, tpl, source, baseDir)), 0o644); err != nil {
+	if err := writePage(cache, name, renderHTML(doc, tpl, source, baseDir), lines); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
 	}

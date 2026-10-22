@@ -173,7 +173,7 @@ func runDocs(args []string) int {
 		tpl, _ := lookupTemplate(tplName)
 		source := filepath.Join(root, entry.source)
 		page := renderHTML(doc, tpl, source, filepath.Dir(source))
-		if err := os.WriteFile(filepath.Join(dir, entry.name+".html"), []byte(page), 0o644); err != nil {
+		if err := writePage(dir, entry.name, page, entry.lines); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return 2
 		}

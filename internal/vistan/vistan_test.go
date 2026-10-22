@@ -448,6 +448,7 @@ func TestKeepPagesPrunesOldest(t *testing.T) {
 		if err := os.WriteFile(path, []byte("x"), 0o644); err != nil {
 			t.Fatal(err)
 		}
+		os.WriteFile(filepath.Join(dir, fmt.Sprintf("page-%d.md", i)), []byte("# x\n"), 0o644)
 		stamp := now.Add(time.Duration(i-4) * time.Hour)
 		if err := os.Chtimes(path, stamp, stamp); err != nil {
 			t.Fatal(err)
@@ -462,10 +463,10 @@ func TestKeepPagesPrunesOldest(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(entries) != 4 {
-		t.Fatalf("files left = %d, want 4 (3 pages + index)", len(entries))
+	if len(entries) != 7 {
+		t.Fatalf("files left = %d, want 7 (3 pages, 3 sources, index)", len(entries))
 	}
-	for _, name := range []string{"page-0.html", "page-1.html"} {
+	for _, name := range []string{"page-0.html", "page-1.html", "page-0.md", "page-1.md"} {
 		if _, err := os.Stat(filepath.Join(dir, name)); !os.IsNotExist(err) {
 			t.Fatalf("%s should have been pruned", name)
 		}
@@ -475,6 +476,9 @@ func TestKeepPagesPrunesOldest(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, "page-4.html")); err != nil {
 		t.Fatalf("newest page was pruned")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "page-4.md")); err != nil {
+		t.Fatalf("source of the newest page was pruned")
 	}
 }
 
@@ -498,6 +502,8 @@ func TestKeepPagesPrunesByAge(t *testing.T) {
 	fresh := filepath.Join(dir, "fresh.html")
 	os.WriteFile(old, []byte("x"), 0o644)
 	os.WriteFile(fresh, []byte("x"), 0o644)
+	os.WriteFile(filepath.Join(dir, "old.md"), []byte("# x\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "fresh.md"), []byte("# x\n"), 0o644)
 	stamp := time.Now().AddDate(0, 0, -40)
 	if err := os.Chtimes(old, stamp, stamp); err != nil {
 		t.Fatal(err)
@@ -508,6 +514,9 @@ func TestKeepPagesPrunesByAge(t *testing.T) {
 
 	if _, err := os.Stat(old); !os.IsNotExist(err) {
 		t.Fatalf("page older than 30 days was kept")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "old.md")); !os.IsNotExist(err) {
+		t.Fatalf("source of the old page was kept")
 	}
 	if _, err := os.Stat(fresh); err != nil {
 		t.Fatalf("recent page was pruned: %v", err)
@@ -572,10 +581,33 @@ func TestIndexGroupsByProject(t *testing.T) {
 	}
 }
 
+func TestWritePageKeepsTheSource(t *testing.T) {
+	dir := t.TempDir()
+	if err := writePage(dir, "plan", "<html></html>", []string{"# A", "", "text"}); err != nil {
+		t.Fatal(err)
+	}
+	md, err := os.ReadFile(filepath.Join(dir, "plan.md"))
+	if err != nil {
+		t.Fatalf("source not written: %v", err)
+	}
+	if string(md) != "# A\n\ntext\n" {
+		t.Fatalf("source = %q", md)
+	}
+	if err := writePage(dir, "map", "<html></html>", nil); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "map.md")); !os.IsNotExist(err) {
+		t.Fatalf("generated page wrote a source it does not have")
+	}
+}
+
 func TestHistoryJSON(t *testing.T) {
 	dir := t.TempDir()
 	page := `<html><body class="tpl-plan"><h1>A &amp; B</h1><meta name="vistan-project" content="demo"></body></html>`
 	if err := os.WriteFile(filepath.Join(dir, "plan.html"), []byte(page), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "plan.md"), []byte("# A\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	pages, err := collectPages(dir)
@@ -594,6 +626,7 @@ func TestHistoryJSON(t *testing.T) {
 			Title    string `json:"title"`
 			Template string `json:"template"`
 			Project  string `json:"project"`
+			Source   string `json:"source"`
 			Modified string `json:"modified"`
 			Bytes    int64  `json:"bytes"`
 		} `json:"pages"`
@@ -607,6 +640,9 @@ func TestHistoryJSON(t *testing.T) {
 	entry := got.Pages[0]
 	if entry.Name != "plan.html" || entry.Title != "A & B" || entry.Template != "plan" || entry.Project != "demo" {
 		t.Fatalf("entry = %+v", entry)
+	}
+	if entry.Source != "plan.md" {
+		t.Fatalf("source = %q", entry.Source)
 	}
 	if entry.Bytes != int64(len(page)) {
 		t.Fatalf("bytes = %d, want %d", entry.Bytes, len(page))
@@ -655,6 +691,7 @@ func TestRemovePage(t *testing.T) {
 	t.Setenv("VISTAN_CACHE", dir)
 	for _, name := range []string{"plan.html", "keep.html"} {
 		os.WriteFile(filepath.Join(dir, name), []byte(`<html><body class="tpl-plan"><h1>x</h1></body></html>`), 0o644)
+		os.WriteFile(filepath.Join(dir, strings.TrimSuffix(name, ".html")+".md"), []byte("# x\n"), 0o644)
 	}
 	if code := runRm([]string{"plan"}); code != 0 {
 		t.Fatalf("runRm exit = %d", code)
@@ -662,8 +699,14 @@ func TestRemovePage(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(dir, "plan.html")); !os.IsNotExist(err) {
 		t.Fatalf("plan.html still exists")
 	}
+	if _, err := os.Stat(filepath.Join(dir, "plan.md")); !os.IsNotExist(err) {
+		t.Fatalf("plan.md still exists")
+	}
 	if _, err := os.Stat(filepath.Join(dir, "keep.html")); err != nil {
 		t.Fatalf("keep.html was removed")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "keep.md")); err != nil {
+		t.Fatalf("keep.md was removed")
 	}
 	if code := runRm([]string{"missing"}); code != 2 {
 		t.Fatalf("missing page exit = %d", code)

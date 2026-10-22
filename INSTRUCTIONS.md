@@ -75,11 +75,17 @@ and a temp cleanup:
 | macOS | `~/Library/Application Support/vistan` |
 | Windows | `%AppData%\vistan` |
 
-Every render writes one page there, and the oldest are deleted both by count and by
-age: at most `VISTAN_KEEP` pages (default 50, `0` disables the count) and nothing older
-than `VISTAN_KEEP_DAYS` (default 30, `0` disables the age limit). Retention runs after
-a page is written, so the directory never grows without bound and `history` never links
-to a file that is gone. The count is the real disk bound; the age ceiling is what keeps
+Every render writes two files there: the page and its source, `plan.html` and
+`plan.md`. The source is the exact document vistan received, so a page can be
+re-rendered later with the current templates (`vistan serve <dir>/plan.md`) or read as
+plain text without parsing HTML. `map` is the exception: it has no source, so only the
+page is written.
+
+The oldest pages are deleted both by count and by age: at most `VISTAN_KEEP` pages
+(default 50, `0` disables the count) and nothing older than `VISTAN_KEEP_DAYS` (default
+30, `0` disables the age limit). A page and its source always leave together. Retention
+runs after a page is written, so the directory never grows without bound and `history`
+never links to a file that is gone. The count is the real disk bound; the age ceiling is what keeps
 a page from a quiet month from lingering forever.
 
 Terminal exit codes: `0` complete, `1` a section is missing or empty, `2` cannot read
@@ -191,7 +197,8 @@ time each project generated something. The project is the nearest directory with
 belongs to the repository.
 
 `vistan history --json` prints the same list for an agent: `dir`, and for each page
-`name`, `title`, `template`, `project`, `modified` (RFC 3339) and `bytes`. It writes
+`name`, `title`, `template`, `project`, `source` (empty when there is none), `modified`
+(RFC 3339) and `bytes`. It writes
 `index.html` but starts no server and opens no browser, so a script can call it freely.
 
 `vistan open treemap` reopens the one page whose name contains that, and refuses when

@@ -89,6 +89,13 @@ The user state directory, not the project: `~/.local/state/vistan` on Linux,
 `~/Library/Application Support/vistan` on macOS, `%AppData%\vistan` on Windows. At most
 50 pages and 30 days; `VISTAN_KEEP` and `VISTAN_KEEP_DAYS` change that.
 
+Each page keeps its source next to it (`plan.html` and `plan.md`), so it can be
+re-rendered with the current templates and read as plain text:
+
+```sh
+vistan serve ~/.local/state/vistan/plan.md   # or the dir from `vistan history --json`
+```
+
 ## More
 
 - [INSTRUCTIONS.md](INSTRUCTIONS.md): every command, template, the renderer subset and

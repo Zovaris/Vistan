@@ -23,6 +23,7 @@ type pageEntry struct {
 	title   string
 	tpl     string
 	project string
+	source  string
 	mod     time.Time
 	size    int64
 }
@@ -43,6 +44,10 @@ func collectPages(dir string) ([]pageEntry, error) {
 			continue
 		}
 		page := pageEntry{name: entry.Name(), title: strings.TrimSuffix(entry.Name(), ".html"), mod: info.ModTime(), size: info.Size()}
+		md := strings.TrimSuffix(entry.Name(), ".html") + ".md"
+		if mdInfo, err := os.Stat(filepath.Join(dir, md)); err == nil && !mdInfo.IsDir() {
+			page.source = md
+		}
 		if b, err := os.ReadFile(filepath.Join(dir, entry.Name())); err == nil {
 			if m := titleTag.FindSubmatch(b); m != nil {
 				page.title = html.UnescapeString(string(m[1]))
@@ -64,6 +69,11 @@ func isIndexName(name string) bool {
 	return name == "index.html" || name == "decisions.html"
 }
 
+func removePage(dir, name string) {
+	os.Remove(filepath.Join(dir, name))
+	os.Remove(filepath.Join(dir, strings.TrimSuffix(name, ".html")+".md"))
+}
+
 func writeIndex(dir string, pages []pageEntry) error {
 	return os.WriteFile(filepath.Join(dir, "index.html"), []byte(indexHTML(pages)), 0o644)
 }
@@ -81,6 +91,7 @@ type jsonPage struct {
 	Title    string `json:"title"`
 	Template string `json:"template"`
 	Project  string `json:"project"`
+	Source   string `json:"source"`
 	Modified string `json:"modified"`
 	Bytes    int64  `json:"bytes"`
 }
@@ -98,6 +109,7 @@ func historyJSON(dir string, pages []pageEntry) ([]byte, error) {
 			Title:    page.title,
 			Template: page.tpl,
 			Project:  page.project,
+			Source:   page.source,
 			Modified: page.mod.Format(time.RFC3339),
 			Bytes:    page.size,
 		})
@@ -249,6 +261,7 @@ func runRm(args []string) int {
 			code = 2
 			continue
 		}
+		os.Remove(filepath.Join(dir, strings.TrimSuffix(filepath.Base(path), ".html")+".md"))
 		fmt.Printf("removed %s\n", filepath.Base(path))
 		removed++
 	}
