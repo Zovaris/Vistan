@@ -47,8 +47,6 @@ var (
 	indentOnly = regexp.MustCompile(`^[ \t]*`)
 )
 
-// renderTerminal prints the document and returns the exit code: 0 when every
-// required section is present and non-empty, 1 otherwise.
 func renderTerminal(d *Doc, t Template, source string, color bool, w io.Writer) int {
 	paint := func(code string) string {
 		if !color {
@@ -116,7 +114,6 @@ func renderTerminal(d *Doc, t Template, source string, color bool, w io.Writer) 
 	return 0
 }
 
-// inline escapes text and turns `code spans` into <code>.
 func inline(s string) string {
 	s = html.EscapeString(s)
 	if !strings.Contains(s, "`") {
@@ -213,8 +210,6 @@ copy.addEventListener('click', async () => {
 </script>
 `
 
-// renderHTML builds a self-contained page. Selection pages turn every section
-// into a radio option and add an answer field.
 func renderHTML(d *Doc, t Template, source string) string {
 	var b strings.Builder
 

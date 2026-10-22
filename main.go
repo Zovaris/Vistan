@@ -185,7 +185,6 @@ func show(command string, args []string) int {
 	return serveDoc(doc, tpl, source, name)
 }
 
-// runMap scans a directory and serves the generated map.
 func runMap(args []string) int {
 	path := "."
 	depth := 2
@@ -226,7 +225,6 @@ func runMap(args []string) int {
 	return serveDoc(doc, tpl, path, pageName(filepath.Base(abs)))
 }
 
-// pageName keeps generated file names URL-safe.
 func pageName(s string) string {
 	var b strings.Builder
 	for _, r := range s {
@@ -244,7 +242,6 @@ func pageName(s string) string {
 	return out
 }
 
-// serveDoc writes the page and makes sure a server is up for it.
 func serveDoc(doc *Doc, tpl Template, source, name string) int {
 	cache := cacheDir()
 	if err := os.MkdirAll(cache, 0o755); err != nil {

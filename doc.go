@@ -6,13 +6,11 @@ import (
 	"strings"
 )
 
-// Section is one "## " block: its title and the raw lines under it.
 type Section struct {
 	Name string
 	Body []string
 }
 
-// Doc is a parsed Markdown file.
 type Doc struct {
 	Title    string
 	Intro    []string
@@ -24,9 +22,6 @@ var (
 	marker    = regexp.MustCompile(`^[ \t]*<!--[ \t]*vistan:[ \t]*([a-z][a-z-]*)[ \t]*-->[ \t]*$`)
 )
 
-// Parse reads the subset of Markdown vistan understands: one "# " title,
-// "## " sections, bullet lists, fenced code and paragraphs. Anything else is
-// kept as body text and rendered as a paragraph.
 func Parse(lines []string) *Doc {
 	d := &Doc{}
 	cur := -1
@@ -63,7 +58,6 @@ func Parse(lines []string) *Doc {
 	return d
 }
 
-// BodyTrimmed drops blank lines at both ends of a section body.
 func (s Section) BodyTrimmed() []string { return trimBlank(s.Body) }
 
 func trimBlank(lines []string) []string {
@@ -86,7 +80,6 @@ func (d *Doc) find(name string) *Section {
 	return nil
 }
 
-// Missing returns the required sections that are absent or empty.
 func (d *Doc) Missing(required []string) []string {
 	var missing []string
 	for _, name := range required {
@@ -98,7 +91,6 @@ func (d *Doc) Missing(required []string) []string {
 	return missing
 }
 
-// Template is one document shape: its required sections and the footer label.
 type Template struct {
 	Name     string
 	Required []string
@@ -135,7 +127,6 @@ func templateText(name string) (string, bool) {
 	return string(b), true
 }
 
-// DeclaredTemplate reports the template named in the document marker, if any.
 func DeclaredTemplate(lines []string) string {
 	for _, line := range lines {
 		if m := marker.FindStringSubmatch(line); m != nil {

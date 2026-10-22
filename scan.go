@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-const maxCountSize = 2 << 20 // do not read files above 2MB just to count lines
+const maxCountSize = 2 << 20
 
 var skipDirs = map[string]bool{
 	"node_modules": true, ".git": true, "vendor": true, "dist": true, "build": true,
@@ -39,7 +39,6 @@ type extStat struct {
 	bytes int64
 }
 
-// scanProject turns a directory into a map document.
 func scanProject(root string, depth int) (*Doc, error) {
 	abs, err := filepath.Abs(root)
 	if err != nil {
@@ -80,8 +79,6 @@ func scanProject(root string, depth int) (*Doc, error) {
 	return doc, nil
 }
 
-// collectFiles prefers git's own view of the project, which already respects
-// .gitignore, and falls back to walking when this is not a repository.
 func collectFiles(root string) ([]scannedFile, string) {
 	out, err := exec.Command("git", "-C", root, "ls-files", "--cached", "--others", "--exclude-standard", "-z").Output()
 	if err == nil && len(out) > 0 {

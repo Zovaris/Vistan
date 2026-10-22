@@ -15,7 +15,6 @@ import (
 
 func pidPath(cache string) string { return filepath.Join(cache, "server") }
 
-// readPidFile returns the pid and port written by a previous serve.
 func readPidFile(cache string) (int, int, bool) {
 	b, err := os.ReadFile(pidPath(cache))
 	if err != nil {
@@ -46,8 +45,6 @@ func portFree(port int) bool {
 	return true
 }
 
-// startServer reuses a live server or spawns one in its own session, so it
-// outlives the command that started it.
 func startServer(cache string, port int) (int, error) {
 	if pid, known, ok := readPidFile(cache); ok && alive(pid) {
 		return known, nil
@@ -86,7 +83,6 @@ func startServer(cache string, port int) (int, error) {
 	return port, nil
 }
 
-// runServer is the foreground process started by serve.
 func runServer(dir string, port int) error {
 	srv := &http.Server{
 		Addr:              fmt.Sprintf("127.0.0.1:%d", port),
