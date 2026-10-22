@@ -626,6 +626,37 @@ func TestDocsIndex(t *testing.T) {
 	}
 }
 
+func TestPagesCarryBackLinkAndFavicon(t *testing.T) {
+	d := parse(t, planDoc)
+	page := renderHTML(d, tpl(t, "plan"), "x.md", "")
+	for _, want := range []string{`class="back" href="/"`, `rel="icon"`} {
+		if !strings.Contains(page, want) {
+			t.Fatalf("page missing %q", want)
+		}
+	}
+
+	list := indexHTML([]pageEntry{{name: "plan.html", title: "A plan", tpl: "plan"}})
+	if !strings.Contains(list, `rel="icon"`) {
+		t.Fatalf("history page missing the favicon")
+	}
+	if strings.Contains(list, `class="back"`) {
+		t.Fatalf("history page should not link back to itself")
+	}
+}
+
+func TestRefreshIndexListsNewPages(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "plan.html"), []byte(`<html><body class="tpl-plan"><h1>A plan</h1></body></html>`), 0o644)
+	refreshIndex(dir)
+	b, err := os.ReadFile(filepath.Join(dir, "index.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(b), `href="plan.html"`) {
+		t.Fatalf("index does not list the new page")
+	}
+}
+
 func TestPageCarriesProjectMeta(t *testing.T) {
 	d := parse(t, planDoc)
 	html := renderHTML(d, tpl(t, "plan"), "x.md", "")

@@ -341,6 +341,7 @@ func serveDoc(doc *Doc, tpl Template, source, name, baseDir string) int {
 		return 2
 	}
 	keepPages(cache)
+	refreshIndex(cache)
 
 	port := 8765
 	if p := os.Getenv("VISTAN_PORT"); p != "" {

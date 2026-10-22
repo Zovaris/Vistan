@@ -66,6 +66,14 @@ func writeIndex(dir string, pages []pageEntry) error {
 	return os.WriteFile(filepath.Join(dir, "index.html"), []byte(indexHTML(pages)), 0o644)
 }
 
+func refreshIndex(dir string) {
+	pages, err := collectPages(dir)
+	if err != nil {
+		return
+	}
+	writeIndex(dir, pages)
+}
+
 func runIndex() int {
 	dir := stateDir()
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -191,11 +199,7 @@ func runRm(args []string) int {
 	}
 
 	if removed > 0 {
-		if _, err := os.Stat(filepath.Join(dir, "index.html")); err == nil {
-			if pages, err := collectPages(dir); err == nil {
-				writeIndex(dir, pages)
-			}
-		}
+		refreshIndex(dir)
 	}
 	return code
 }
@@ -269,6 +273,7 @@ func indexHTML(pages []pageEntry) string {
 	var b strings.Builder
 	b.WriteString("<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n")
+	b.WriteString(faviconTag)
 	b.WriteString("<title>vistan history</title>\n<style>\n")
 	b.WriteString(pageCSS)
 	b.WriteString(indexCSS)

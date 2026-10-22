@@ -182,6 +182,7 @@ func runDocs(args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
 	}
+	refreshIndex(dir)
 
 	base := serveBase(dir)
 	fmt.Printf("%d record%s · %s  %sdecisions.html\n", len(entries), pluralSuffix(len(entries)),
@@ -229,10 +230,13 @@ func decisionsHTML(entries []docEntry) string {
 	var b strings.Builder
 	b.WriteString("<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n")
+	b.WriteString(faviconTag)
 	b.WriteString("<title>Decisions</title>\n<style>\n")
 	b.WriteString(pageCSS)
 	b.WriteString(decisionsCSS)
-	b.WriteString("</style>\n</head>\n<body class=\"tpl-decisions\">\n<main>\n<h1>Decisions</h1>\n")
+	b.WriteString("</style>\n</head>\n<body class=\"tpl-decisions\">\n<main>\n")
+	b.WriteString("<a class=\"back\" href=\"/\">← History</a>\n")
+	b.WriteString("<h1>Decisions</h1>\n")
 	fmt.Fprintf(&b, "<p class=\"src\">%d record%s · %s</p>\n", len(entries), pluralSuffix(len(entries)), statusSummary(entries))
 
 	var lastStatus string

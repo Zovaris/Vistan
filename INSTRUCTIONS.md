@@ -165,6 +165,9 @@ fizza   2 pages · last 20 Oct
   11:04  adr       ADR: serve pages over HTTP           http://.../adr.html
 ```
 
+Every render also rewrites `index.html`, so the `← History` link at the top of each
+page always resolves, even before you run `vistan history` for the first time.
+
 The page groups entries by project, newest activity first, with a count and the last
 time each project generated something. The project is the nearest directory with a
 `.git`, not the directory the command ran in, so a page built from `examples/` still
@@ -268,6 +271,8 @@ Anything else stays literal text, which is why a broken document still renders.
 A paper document, not a dashboard: warm off-white, near-black ink, serif body at a
 38rem measure, one hairline rule per section, italic section headings with a muted
 count. Dark mode follows `prefers-color-scheme`. No web fonts, no shadows, no cards.
+The tab carries an inline SVG favicon and every page opens with a small `← History`
+link, so the browser tab and the page itself both say where you are.
 
 The one exception is the plan's **Your move**: it is a bordered panel tagged
 `waiting on you`, because that is the part the reader has to act on. The summary strip

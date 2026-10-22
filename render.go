@@ -649,6 +649,8 @@ func projectName(baseDir string) string {
 	}
 }
 
+const faviconTag = `<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23f6f3ea'/><text x='16' y='23' font-family='Georgia,serif' font-size='20' text-anchor='middle' fill='%231b1a17'>v</text></svg>">` + "\n"
+
 func renderHTML(d *Doc, t Template, source, baseDir string) string {
 	var b strings.Builder
 
@@ -659,9 +661,11 @@ func renderHTML(d *Doc, t Template, source, baseDir string) string {
 
 	b.WriteString("<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n")
+	b.WriteString(faviconTag)
 	fmt.Fprintf(&b, "<title>%s</title>\n", html.EscapeString(title))
 	fmt.Fprintf(&b, "<meta name=\"vistan-project\" content=\"%s\">\n", html.EscapeString(projectName(baseDir)))
 	b.WriteString("<style>\n" + pageCSS + "</style>\n</head>\n<body class=\"tpl-" + t.Name + "\">\n<main>\n")
+	b.WriteString("<a class=\"back\" href=\"/\">← History</a>\n")
 	fmt.Fprintf(&b, "<h1>%s</h1>\n", html.EscapeString(title))
 	fmt.Fprintf(&b, "<p class=\"src\">%s</p>\n", html.EscapeString(source))
 
@@ -949,6 +953,11 @@ figcaption { margin-top: 6px; color: var(--muted); font-size: 0.75rem;
   background-image: radial-gradient(circle, var(--rule) 1px, transparent 1px);
   background-size: 16px 16px; background-position: 8px 8px; }
 .tpl-diagram section:first-of-type pre { padding: 30px 28px; }
+
+.back { display: inline-block; margin-bottom: 16px; text-decoration: none;
+  font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif; font-size: 0.62rem;
+  letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); }
+.back:hover { color: var(--ink); }
 
 .tpl-graph main { width: min(52rem, calc(100vw - 2.5rem)); }
 .tpl-graph section.drawing { border-top: 0; padding-top: 8px; margin-top: 12px; }
