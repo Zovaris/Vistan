@@ -1,23 +1,24 @@
 <!-- vistan: summary -->
 
-# Summary: vistan v1
+# Summary: maps, figures and an index
 
-A shell script that turns a Markdown document into a page a human can read without scrolling a chat.
+Seven templates, a treemap for `map`, and one command to find what you generated.
 
 ## What changed
 
-- `vistan serve` builds the page, starts a local server and opens it.
-- Five templates: plan, summary, selection, map and diagram.
-- The selection template adds radios, an answer field and a copy button.
-- The page moved from a dark dashboard to a paper document: serif, 38rem, 1px rules.
+- `vistan map` now draws a squarified SVG treemap above the tree: area is size, colour follows the parent.
+- `selection` options can carry figures, code and prose, not just bullets.
+- `diagram`, `adr` and `changelog` got fixed sections: context/reading, options and links, one block per release.
+- `vistan index` lists every page with its link and template name.
+- `###` subheads render, and bold that wraps code no longer leaks its asterisks.
 
 ## Verification
 
-- `./test.sh`: 14 checks, all green.
-- The served page answers 200 and contains the four plan sections.
-- The HTML escapes `<script>` and quotes inside radio values.
+- `go test ./...`: 19 checks, all green. `go vet` and `gofmt -l` clean.
+- The seven example pages answer 200 and were read in the browser at 980px, light and dark.
+- `vistan map .` on this repo: 27 files, 2702 lines, treemap labels inside their boxes.
 
 ## Pending
 
-- Decide whether the page should be reachable from other machines.
-- Try the copy button in Safari, not just Chromium.
+- Push the five commits.
+- Write the Homebrew formula once there are release tarballs.

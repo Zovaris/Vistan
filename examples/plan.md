@@ -5,24 +5,26 @@
 ## Decisions
 
 - Documents are Markdown with fixed sections; the tool never invents content.
-- One shell script plus awk, no dependencies, no build step.
-- `serve` runs a local Python http.server on 127.0.0.1 and leaves it running.
-- Templates live as `.md` files, so the agent only has to copy one.
+- One Go binary with `net/http` and `embed`: no runtime, no dependencies, `go install` and done.
+- Templates live as embedded `.md` files, so the binary installs its own content and the agent only copies one.
+- `serve` re-executes itself in a new session, so the page outlives the command that opened it.
+- `map` draws its own SVG treemap instead of shipping an image or a chart library.
 
 ## Rejected
 
-- A packaged binary: builds, signing and distribution for a 300 line script.
-- JSON documents: Markdown survives a broken parser and humans can read it.
-- A subagent writing the summary: it costs a call and can invent the state.
-- Rendering with a JS framework: the page is text, not an app.
+- Bash plus Python: the "binary" would ask for an interpreter on a clean machine.
+- A JS renderer: a runtime and a package tree for one page of text.
+- Mermaid: a network dependency for diagrams that ASCII already draws.
+- `file://` pages: no origin, so the clipboard API and relative links break.
 
 ## Verification
 
-- `./test.sh` covers rendering, exit codes, escaping and the server lifecycle.
-- `curl` against the served page returns 200 with the expected sections.
-- The selection page was clicked in a browser: the answer field fills and Copy works.
+- `go test ./...` covers the parser, both renderers, escaping, the treemap and the templates.
+- `go vet` and `gofmt -l` clean.
+- Every example page answers 200, and the pages were read in a browser, light and dark.
+- The selection page: a real click fills the answer, the copy button copies it.
 
 ## Your move
 
-- Decide whether the page should keep the paper look at night or go dark.
-- Decide if the cache stays in TMPDIR or moves to a folder you can revisit.
+- Decide whether the generated pages belong in `.vistan/` inside the project or in the cache.
+- Decide if `diagram` should stay ASCII or accept a drawn format.
