@@ -490,31 +490,139 @@ func TestKeepPagesUnlimitedWhenZero(t *testing.T) {
 	}
 }
 
-func TestDayLabels(t *testing.T) {
+func TestLastSeen(t *testing.T) {
 	now := time.Now()
-	if got := dayLabel(now); got != "Today" {
+	if got := lastSeen(now); !strings.HasPrefix(got, "today ") {
 		t.Fatalf("today label = %q", got)
 	}
-	if got := dayLabel(now.AddDate(0, 0, -1)); got != "Yesterday" {
+	if got := lastSeen(now.AddDate(0, 0, -1)); got == "" || strings.HasPrefix(got, "today ") {
 		t.Fatalf("yesterday label = %q", got)
 	}
-	old := now.AddDate(0, 0, -9)
-	if got := dayLabel(old); got == "Today" || got == "Yesterday" {
+	if got := lastSeen(now.AddDate(-1, 0, 0)); !strings.Contains(got, " ") {
 		t.Fatalf("old label = %q", got)
 	}
 }
 
-func TestIndexGroupsByDayAndProject(t *testing.T) {
+func TestIndexGroupsByProject(t *testing.T) {
 	now := time.Now()
 	pages := []pageEntry{
 		{name: "plan.html", title: "A plan", tpl: "plan", project: "vistan", mod: now},
-		{name: "review.html", title: "A review", tpl: "review", project: "fizza", mod: now.AddDate(0, 0, -1)},
+		{name: "review.html", title: "A review", tpl: "review", project: "vistan", mod: now.Add(-time.Hour)},
+		{name: "spec.html", title: "A spec", tpl: "spec", project: "fizza", mod: now.AddDate(0, 0, -1)},
 	}
 	html := indexHTML(pages)
-	for _, want := range []string{"Today", "Yesterday", "vistan", "fizza", "2 projects", `href="review.html"`} {
+	for _, want := range []string{
+		`<h2 class="proj">vistan`, "2 pages · last today", `<h2 class="proj">fizza`, "1 page · last",
+		"3 pages · 2 projects", `href="review.html"`,
+	} {
 		if !strings.Contains(html, want) {
 			t.Fatalf("index missing %q", want)
 		}
+	}
+	if strings.Index(html, ">vistan ") > strings.Index(html, ">fizza ") {
+		t.Fatalf("projects are not ordered by last activity")
+	}
+	if strings.Contains(html, "Today<") {
+		t.Fatalf("index still groups by day")
+	}
+}
+
+func TestResolvePage(t *testing.T) {
+	dir := t.TempDir()
+	body := []byte(`<html><body class="tpl-review"><h1>A page</h1></body></html>`)
+	for _, name := range []string{"plan.html", "review-treemap.html", "review-history.html"} {
+		if err := os.WriteFile(filepath.Join(dir, name), body, 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if path, _ := resolvePage(dir, "plan"); path != filepath.Join(dir, "plan.html") {
+		t.Fatalf("exact match = %q", path)
+	}
+	if path, _ := resolvePage(dir, "plan.html"); path != filepath.Join(dir, "plan.html") {
+		t.Fatalf("extension match = %q", path)
+	}
+	if path, _ := resolvePage(dir, "treemap"); path != filepath.Join(dir, "review-treemap.html") {
+		t.Fatalf("contains match = %q", path)
+	}
+	if path, candidates := resolvePage(dir, "review"); path != "" || len(candidates) != 2 {
+		t.Fatalf("ambiguous = %q %v", path, candidates)
+	}
+	if path, _ := resolvePage(dir, "nope"); path != "" {
+		t.Fatalf("missing match = %q", path)
+	}
+}
+
+func TestRemovePage(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("VISTAN_CACHE", dir)
+	for _, name := range []string{"plan.html", "keep.html"} {
+		os.WriteFile(filepath.Join(dir, name), []byte(`<html><body class="tpl-plan"><h1>x</h1></body></html>`), 0o644)
+	}
+	if code := runRm([]string{"plan"}); code != 0 {
+		t.Fatalf("runRm exit = %d", code)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "plan.html")); !os.IsNotExist(err) {
+		t.Fatalf("plan.html still exists")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "keep.html")); err != nil {
+		t.Fatalf("keep.html was removed")
+	}
+	if code := runRm([]string{"missing"}); code != 2 {
+		t.Fatalf("missing page exit = %d", code)
+	}
+}
+
+func TestGraphSVG(t *testing.T) {
+	svg := graphSVG([]string{"web --> api : http", "api --> db", "db --> api", "api [API server]"})
+	for _, want := range []string{`<svg class="graph"`, ">API server<", ">web<", ">http<", `marker-end="url(#g-arrow)"`} {
+		if !strings.Contains(svg, want) {
+			t.Fatalf("graph missing %q in %s", want, svg)
+		}
+	}
+	nodes, edges := parseGraph([]string{"a -> b", "b -> a", "a [Alpha]"})
+	if len(nodes) != 2 || len(edges) != 2 || nodes[0].label != "Alpha" {
+		t.Fatalf("parseGraph = %v %v", nodes, edges)
+	}
+}
+
+func TestGraphTemplateReplacesTheEdgeList(t *testing.T) {
+	d := parse(t, "# G\n\n## Context\n\nx\n\n## Graph\n\n```\na --> b\n```\n\n## Reading\n\n- y\n")
+	html := renderHTML(d, tpl(t, "graph"), "x.md", "")
+	if !strings.Contains(html, `<svg class="graph"`) {
+		t.Fatalf("graph section did not render as SVG")
+	}
+	if strings.Contains(html, "<pre>") {
+		t.Fatalf("graph section still renders the edge list as code")
+	}
+}
+
+func TestDocsIndex(t *testing.T) {
+	dir := t.TempDir()
+	os.MkdirAll(filepath.Join(dir, "docs"), 0o755)
+	os.WriteFile(filepath.Join(dir, "docs", "serve.md"), []byte("<!-- vistan: adr -->\n\n# Serve over HTTP\n\n## Status\n\naccepted — 20 Oct 2026\n\n## Context\n\nx\n\n## Decision\n\ny\n\n## Consequences\n\n- z\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "docs", "history.md"), []byte("<!-- vistan: spec -->\n\n# Keep pages\n\n## Status\n\ndraft — 22 Oct 2026\n\n## Problem\n\nx\n\n## Proposal\n\ny\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "docs", "notes.md"), []byte("# Notes\n\n- something\n"), 0o644)
+
+	entries, err := collectDocs(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 2 {
+		t.Fatalf("entries = %d, want 2", len(entries))
+	}
+	if entries[0].status != "accepted" || entries[0].when != "20 Oct 2026" {
+		t.Fatalf("first entry = %+v", entries[0])
+	}
+
+	page := decisionsHTML(entries)
+	for _, want := range []string{"2 records", "accepted", "draft", `href="docs-serve.html"`, "20 Oct 2026", ">SPEC<", ">ADR<"} {
+		if !strings.Contains(page, want) {
+			t.Fatalf("decisions page missing %q", want)
+		}
+	}
+	if strings.Contains(page, "notes") {
+		t.Fatalf("plain markdown leaked into the index")
 	}
 }
 

@@ -23,6 +23,8 @@ func usage(w io.Writer) {
   map [path]   scan a directory and render it as a map (default: .)
   docs [path]  index the ADRs and specs under a directory (default: .)
   history      list the saved pages and serve them (same as index)
+  open <name>  open a saved page by name or prefix
+  rm <name>    delete saved pages
   stop         stop the local server
   new          print a template to stdout
   templates    list the templates
@@ -47,7 +49,7 @@ func run(args []string) int {
 	command := "show"
 	if len(args) > 0 {
 		switch args[0] {
-		case "serve", "stop", "new", "templates", "map", "docs", "index", "history", "brief", "serve-child":
+		case "serve", "stop", "new", "templates", "map", "docs", "index", "history", "open", "rm", "brief", "serve-child":
 			command = args[0]
 			args = args[1:]
 		case "-h", "--help", "help":
@@ -88,6 +90,10 @@ func run(args []string) int {
 		return 0
 	case "index", "history":
 		return runIndex()
+	case "open":
+		return runOpen(args)
+	case "rm":
+		return runRm(args)
 	case "docs":
 		return runDocs(args)
 	case "map":
@@ -149,7 +155,7 @@ func keepPages(dir string) {
 	var pages []page
 	for _, entry := range entries {
 		name := entry.Name()
-		if entry.IsDir() || !strings.HasSuffix(name, ".html") || name == "index.html" {
+		if entry.IsDir() || !strings.HasSuffix(name, ".html") || isIndexName(name) {
 			continue
 		}
 		if info, err := entry.Info(); err == nil {
