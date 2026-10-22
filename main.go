@@ -21,6 +21,7 @@ func usage(w io.Writer) {
 
   serve        build the page, start a local server and open it
   map [path]   scan a directory and render it as a map (default: .)
+  docs [path]  index the ADRs and specs under a directory (default: .)
   history      list the saved pages and serve them (same as index)
   stop         stop the local server
   new          print a template to stdout
@@ -28,7 +29,8 @@ func usage(w io.Writer) {
   brief        print the brief for the agent that writes the pages
   --template   override the template declared in the document
 
-Templates: plan, summary, selection, review, map, diagram, adr, changelog.
+Templates: plan, summary, selection, review, map, diagram, graph, adr, spec,
+changelog.
 Declare one in the document with  <!-- vistan: map -->  or pass --template.
 
 Env: VISTAN_PORT (default 8765), VISTAN_NO_OPEN=1, VISTAN_CACHE, VISTAN_KEEP
@@ -45,7 +47,7 @@ func run(args []string) int {
 	command := "show"
 	if len(args) > 0 {
 		switch args[0] {
-		case "serve", "stop", "new", "templates", "map", "index", "history", "brief", "serve-child":
+		case "serve", "stop", "new", "templates", "map", "docs", "index", "history", "brief", "serve-child":
 			command = args[0]
 			args = args[1:]
 		case "-h", "--help", "help":
@@ -86,6 +88,8 @@ func run(args []string) int {
 		return 0
 	case "index", "history":
 		return runIndex()
+	case "docs":
+		return runDocs(args)
 	case "map":
 		return runMap(args)
 	case "serve-child":

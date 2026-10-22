@@ -83,6 +83,21 @@ func startServer(cache string, port int) (int, error) {
 	return port, nil
 }
 
+func serveBase(dir string) string {
+	port := 8765
+	if p := os.Getenv("VISTAN_PORT"); p != "" {
+		fmt.Sscanf(p, "%d", &port)
+	}
+	if _, err := startServer(dir, port); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return ""
+	}
+	if pid, known, ok := readPidFile(dir); ok && pid > 0 {
+		port = known
+	}
+	return fmt.Sprintf("http://127.0.0.1:%d/", port)
+}
+
 func runServer(dir string, port int) error {
 	srv := &http.Server{
 		Addr:              fmt.Sprintf("127.0.0.1:%d", port),
