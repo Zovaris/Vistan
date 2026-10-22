@@ -4,8 +4,8 @@ Turns a Markdown document into something a human can actually read: a page in th
 browser, or clean text in the terminal. Made for the moment when an agent finishes
 working and you do not want to read the whole conversation.
 
-One file, `vistan`, about 300 lines of bash and awk. No dependencies beyond `python3`
-for the server. No build step.
+A single Go binary. No runtime dependencies, no interpreter, no build step for the
+person using it.
 
 ## Why
 
@@ -16,9 +16,17 @@ shapes, checks it is complete, and renders it.
 ## Install
 
 ```sh
-chmod +x vistan
-ln -s "$PWD/vistan" ~/bin/vistan      # or add this folder to PATH
+go install github.com/sthbryan/vistan@latest   # into $GOBIN
 ```
+
+Or from a checkout:
+
+```sh
+go build -o vistan .
+```
+
+`brew install sthbryan/tap/vistan` works once a release exists; the formula expects
+`vistan_x.y.z_darwin_arm64.tar.gz` and `..._darwin_amd64.tar.gz`.
 
 ## Commands
 
@@ -31,9 +39,11 @@ vistan templates                 # list templates
 vistan serve --template map x.md # override the declared template
 ```
 
-`serve` starts `python3 -m http.server` on `127.0.0.1:8765`, detached, and prints the
-URL. It reuses the running server on later calls, so pages accumulate in the same
-origin. `VISTAN_PORT` changes the port, `VISTAN_NO_OPEN=1` skips the browser.
+`serve` starts a detached HTTP server on `127.0.0.1:8765` and prints the URL. It
+survives the command that launched it, because it is re-executed in its own session.
+Later calls reuse it, so pages accumulate in the same origin. `VISTAN_PORT` changes
+the port, `VISTAN_NO_OPEN=1` skips the browser, `VISTAN_CACHE` moves the generated
+pages and the pid file.
 
 Terminal exit codes: `0` complete, `1` a section is missing or empty, `2` cannot read
 the file. That is the hook an agent can check before showing you anything.
@@ -48,7 +58,8 @@ the file. That is the hook an agent can check before showing you anything.
 | `map` | Entry points, Modules, Data flow, Gotchas | orienting someone in a codebase |
 | `diagram` | free form around one fenced diagram | showing a flow or a layout |
 
-Each template is a real `.md` file in `templates/` and starts with a marker:
+Each template is a real `.md` file in `templates/`, embedded into the binary, and
+starts with a marker:
 
 ```markdown
 <!-- vistan: map -->
@@ -87,14 +98,16 @@ count. Dark mode follows `prefers-color-scheme`. No web fonts, no shadows, no ca
   clipboard.
 - The server is a plain directory server with no auth. It binds to loopback only.
 - The page is generated once; it does not reload when the Markdown changes.
-- One parser serves both outputs; changing the HTML emitter usually means touching the
-  terminal one too.
+- Selection mode turns every `##` heading into an option, so a stray section becomes
+  an extra choice.
 
-## Tests
+## Development
 
 ```sh
-./test.sh
+go test ./...     # parser, renderers, escaping, templates
+go vet ./...
+gofmt -l .
 ```
 
-Covers the CLI, the three validation outcomes, HTML escaping, the selection page and
-the server lifecycle.
+`vistan serve-child` is internal: it is the foreground process that `serve` spawns,
+and it only serves the cache directory it is given.
