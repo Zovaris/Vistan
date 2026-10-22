@@ -1,4 +1,4 @@
-package main
+package vistan
 
 import (
 	"bufio"
@@ -43,9 +43,7 @@ Pages are kept between runs, newest first, in the user state directory:
 `)
 }
 
-func main() { os.Exit(run(os.Args[1:])) }
-
-func run(args []string) int {
+func Run(args []string) int {
 	command := "show"
 	if len(args) > 0 {
 		switch args[0] {

@@ -19,13 +19,13 @@ orchestrator can hand all the page work to a cheap sub-agent.
 ## Install
 
 ```sh
-go install github.com/sthbryan/vistan@latest   # into $GOBIN
+go install github.com/sthbryan/vistan/cmd/vistan@latest   # into $GOBIN
 ```
 
 Or from a checkout:
 
 ```sh
-go build -o vistan .
+go build -o vistan ./cmd/vistan
 ```
 
 `brew install sthbryan/tap/vistan` works once a release exists; the formula expects
@@ -87,7 +87,7 @@ the file. That is the hook an agent can check before showing you anything.
 | `changelog` | one section per release, `### Added` / Changed / Fixed / Removed inside | telling users what changed in a release |
 | `review` | one section per finding, named `F1 · Blocker · path:42`, plus Tests and Notes | showing several reviewers' findings, with a decision per finding |
 
-Each template is a real `.md` file in `templates/`, embedded into the binary, and
+Each template is a real `.md` file in `internal/vistan/templates/`, embedded into the binary, and
 starts with a marker:
 
 ```markdown
@@ -130,7 +130,7 @@ as normal sections.
 
 ## Delegating the page work
 
-`vistan brief` prints [BRIEF.md](BRIEF.md): what the tool does, which template to pick,
+`vistan brief` prints [BRIEF.md](internal/vistan/BRIEF.md): what the tool does, which template to pick,
 the markup that becomes a component, the review workflow and the exit codes. Give that
 text to the sub-agent that writes the pages, and keep the orchestrator for deciding
 what to review and what to apply. The brief is embedded in the binary, so it always
@@ -231,7 +231,7 @@ path.
 The status is the first word of the `## Status` section; the date is whatever follows an
 em dash, `|` or `·`, and falls back to the file's modification time. Groups run
 accepted, approved, proposed, draft, rejected, superseded, deprecated, then anything
-else. `templates/` and the usual build directories are skipped, so the template that
+else. `templates` and the usual build directories are skipped, so the template that
 starts every document is not indexed as a record.
 
 Exit `1` when nothing matches, `2` when the directory cannot be read.
@@ -287,6 +287,29 @@ is never out of date.
 - The page is generated once; it does not reload when the Markdown changes.
 - Selection mode turns every `##` heading into an option, so a stray section becomes
   an extra choice.
+
+## Layout
+
+```
+cmd/vistan/        the binary: main calls vistan.Run
+internal/vistan/   the program
+  app.go           commands, flags, state directory, retention
+  doc.go           parser and template list
+  page.go          the HTML page, findings, selection, project name
+  markup.go        inline markup, body, callouts, changes, images
+  terminal.go      the terminal renderer and its colours
+  styles.go        the page CSS and the favicon
+  graph.go         the edge list to SVG
+  docs.go          the ADR and spec index
+  index.go         the saved pages, open and rm
+  scan.go          project scan and treemap
+  server.go        the local server and the pid file
+  templates/       the embedded templates
+  BRIEF.md         the embedded brief
+```
+
+The layout is for humans: `go install` still points at the module, and the binary is
+one package. Splitting by layer would only add exported names and imports.
 
 ## Development
 
