@@ -488,10 +488,11 @@ figcaption { margin-top: 6px; color: var(--muted); font-size: 0.75rem;
   border: 1px solid var(--rule); border-radius: 999px; font-size: 0.78rem; color: var(--muted);
   font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif; }
 .tpl-adr section.status strong { font-weight: 500; }
-.tpl-adr .is-accepted p { color: #33623f; border-color: #b6cdb9; background: #eaf1e6; }
-.tpl-adr .is-rejected p { color: #8a3b2c; border-color: #dcc0b6; background: #f6e9e2; }
-.tpl-adr .is-proposed p { color: #7a5620; border-color: #ddcbaa; background: #f6efdf; }
-.tpl-adr .is-superseded p, .tpl-adr .is-deprecated p { text-decoration: line-through; }
+.tpl-adr section.status.is-accepted p { color: #33623f; border-color: #b6cdb9; background: #eaf1e6; }
+.tpl-adr section.status.is-rejected p { color: #8a3b2c; border-color: #dcc0b6; background: #f6e9e2; }
+.tpl-adr section.status.is-proposed p { color: #7a5620; border-color: #ddcbaa; background: #f6efdf; }
+.tpl-adr section.status.is-superseded p,
+.tpl-adr section.status.is-deprecated p { text-decoration: line-through; }
 .tpl-adr .record h2 { font-style: normal; }
 
 .tpl-changelog h2 { font-style: normal; font-size: 1.15rem;
@@ -504,9 +505,9 @@ figcaption { margin-top: 6px; color: var(--muted); font-size: 0.75rem;
   :root { --paper: #13120e; --ink: #e7e1d3; --muted: #a49c88; --rule: #2a2720; --field: #1a1813; }
   .art .tm-d0 rect { fill-opacity: 0.5; }
   .art .tm-d1 rect { fill-opacity: 0.3; }
-  .tpl-adr .is-accepted p { color: #a8c8a8; border-color: #33452f; background: #1b241a; }
-  .tpl-adr .is-rejected p { color: #d8a295; border-color: #4a302a; background: #261a17; }
-  .tpl-adr .is-proposed p { color: #d6bd8a; border-color: #453a24; background: #221f16; }
+  .tpl-adr section.status.is-accepted p { color: #a8c8a8; border-color: #33452f; background: #1b241a; }
+  .tpl-adr section.status.is-rejected p { color: #d8a295; border-color: #4a302a; background: #261a17; }
+  .tpl-adr section.status.is-proposed p { color: #d6bd8a; border-color: #453a24; background: #221f16; }
   code { background: #221f18; }
   pre { background: #191712; }
   footer .warn { color: #d09a6a; }
