@@ -4,42 +4,44 @@
 
 Today every run writes to `$TMPDIR/vistan` and opens a new tab. To revisit an old page, one of these has to become true.
 
-![Three places the pages could live](assets/options.svg)
+## Keep them in `$TMPDIR`
 
-## Keep them in TMPDIR
+Nothing changes: the page is written next to the server and opened.
 
-What happens now. Each run writes `<name>.html` and opens it.
+![Pages in the temp directory](assets/location-tmp.svg)
 
-- Zero code
-- Gone when the OS cleans temp
-- No way back to an earlier page
+```go
+out := filepath.Join(os.TempDir(), "vistan", name+".html")
+```
+
+- Zero code to write.
+- Gone when the OS cleans temp, and there is no way back to an earlier page.
 
 ## A `.vistan/` folder in the project
 
 Pages sit next to the code and can be committed or ignored.
 
+![Pages inside the project](assets/location-project.svg)
+
 ```
 project/
-├── .vistan/
-│   └── plan.html
+├── .vistan/plan.html
 └── src/
 ```
 
-- Reopen and compare across branches
-- You have to decide git or `.gitignore`
-- Clutters the project tree
+- Reopen and compare across branches.
+- You have to decide git or `.gitignore`, and it clutters the tree.
 
 ## An index in `~/.vistan/`
 
 Everything lives outside the project, with an index of past pages.
 
-- Survives a temp cleanup
-- One more folder to maintain
-- Manual deletion
+![Pages in a home folder with an index](assets/location-home.svg)
 
-## Nothing
+```
+~/.vistan/index.html     ← every page, newest first
+~/.vistan/plan.html
+```
 
-The page is ephemeral by design.
-
-- Zero code
-- Close the tab and it is gone
+- Survives a temp cleanup and works from any project.
+- One more folder to maintain, and deletion is manual.

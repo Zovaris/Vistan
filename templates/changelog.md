@@ -2,18 +2,26 @@
 
 # Changelog
 
-## Added
+## Unreleased
+
+### Added
 
 - New behaviour, written for whoever uses the thing.
 
-## Changed
+### Changed
 
 - Behaviour that is different from the previous release.
 
-## Fixed
+### Fixed
 
 - The bug, not the file you touched.
 
-## Removed
+### Removed
 
 - What no longer exists, and what replaces it.
+
+## 1.0.0 — 21 Oct 2026
+
+### Added
+
+- The first release.
