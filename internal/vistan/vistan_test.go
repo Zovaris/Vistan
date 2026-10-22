@@ -483,10 +483,33 @@ func TestKeepPagesUnlimitedWhenZero(t *testing.T) {
 		os.WriteFile(filepath.Join(dir, fmt.Sprintf("p%d.html", i)), []byte("x"), 0o644)
 	}
 	t.Setenv("VISTAN_KEEP", "0")
+	t.Setenv("VISTAN_KEEP_DAYS", "0")
 	keepPages(dir)
 	entries, _ := os.ReadDir(dir)
 	if len(entries) != 3 {
 		t.Fatalf("files left = %d, want 3", len(entries))
+	}
+}
+
+func TestKeepPagesPrunesByAge(t *testing.T) {
+	dir := t.TempDir()
+	old := filepath.Join(dir, "old.html")
+	fresh := filepath.Join(dir, "fresh.html")
+	os.WriteFile(old, []byte("x"), 0o644)
+	os.WriteFile(fresh, []byte("x"), 0o644)
+	stamp := time.Now().AddDate(0, 0, -40)
+	if err := os.Chtimes(old, stamp, stamp); err != nil {
+		t.Fatal(err)
+	}
+
+	t.Setenv("VISTAN_KEEP", "0")
+	keepPages(dir)
+
+	if _, err := os.Stat(old); !os.IsNotExist(err) {
+		t.Fatalf("page older than 30 days was kept")
+	}
+	if _, err := os.Stat(fresh); err != nil {
+		t.Fatalf("recent page was pruned: %v", err)
 	}
 }
 

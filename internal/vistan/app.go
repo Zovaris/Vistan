@@ -36,7 +36,7 @@ changelog.
 Declare one in the document with  <!-- vistan: map -->  or pass --template.
 
 Env: VISTAN_PORT (default 8765), VISTAN_NO_OPEN=1, VISTAN_CACHE, VISTAN_KEEP
-(default 50 pages; 0 keeps all).
+(default 50 pages; 0 keeps all), VISTAN_KEEP_DAYS (default 30; 0 keeps any age).
 
 Pages are kept between runs, newest first, in the user state directory:
 ~/.local/state/vistan, ~/Library/Application Support/vistan or %%AppData%%\vistan.
@@ -135,9 +135,19 @@ func keepLimit() int {
 	return limit
 }
 
+func keepDays() int {
+	days := 30
+	if v := os.Getenv("VISTAN_KEEP_DAYS"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			days = n
+		}
+	}
+	return days
+}
+
 func keepPages(dir string) {
-	limit := keepLimit()
-	if limit <= 0 {
+	limit, days := keepLimit(), keepDays()
+	if limit <= 0 && days <= 0 {
 		return
 	}
 
@@ -160,13 +170,16 @@ func keepPages(dir string) {
 			pages = append(pages, page{name, info.ModTime()})
 		}
 	}
-	if len(pages) <= limit {
-		return
-	}
-
 	sort.Slice(pages, func(i, j int) bool { return pages[i].mod.After(pages[j].mod) })
-	for _, p := range pages[limit:] {
-		os.Remove(filepath.Join(dir, p.name))
+	cutoff := time.Now().AddDate(0, 0, -days)
+	for i, p := range pages {
+		if limit > 0 && i >= limit {
+			os.Remove(filepath.Join(dir, p.name))
+			continue
+		}
+		if days > 0 && p.mod.Before(cutoff) {
+			os.Remove(filepath.Join(dir, p.name))
+		}
 	}
 }
 

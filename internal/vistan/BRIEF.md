@@ -27,8 +27,8 @@ vistan stop                         # stop the local server
 `serve` prints the URL and keeps a detached server on `127.0.0.1:8765`, so the page
 survives the command. Pass the URL to the human; do not describe the page instead.
 
-Pages are kept between runs in the user state directory and the oldest are pruned
-when there are more than 50. `vistan history` groups them by project with a count and
+Pages are kept between runs in the user state directory: at most 50, nothing older
+than 30 days. A page from a month ago is gone even if the directory is almost empty. `vistan history` groups them by project with a count and
 the last time each project wrote one, so a page from an hour ago is one command away.
 
 ## Pick the template

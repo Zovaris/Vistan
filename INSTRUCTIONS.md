@@ -64,10 +64,12 @@ and a temp cleanup:
 | macOS | `~/Library/Application Support/vistan` |
 | Windows | `%AppData%\vistan` |
 
-Every render writes one page there, and the oldest are deleted once there are more
-than `VISTAN_KEEP` (default 50, `0` keeps everything). Retention runs after a page is
-written, so the directory never grows without bound and `history` never links to a
-file that is gone.
+Every render writes one page there, and the oldest are deleted both by count and by
+age: at most `VISTAN_KEEP` pages (default 50, `0` disables the count) and nothing older
+than `VISTAN_KEEP_DAYS` (default 30, `0` disables the age limit). Retention runs after
+a page is written, so the directory never grows without bound and `history` never links
+to a file that is gone. The count is the real disk bound; the age ceiling is what keeps
+a page from a quiet month from lingering forever.
 
 Terminal exit codes: `0` complete, `1` a section is missing or empty, `2` cannot read
 the file. That is the hook an agent can check before showing you anything.

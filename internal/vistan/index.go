@@ -330,11 +330,14 @@ func indexHTML(pages []pageEntry) string {
 		}
 	}
 
-	keep := fmt.Sprintf("the last %d pages", keepLimit())
-	if keepLimit() <= 0 {
-		keep = "every page"
-	} else if keepLimit() == 1 {
+	keep := "every page"
+	if limit := keepLimit(); limit == 1 {
 		keep = "the last page"
+	} else if limit > 1 {
+		keep = fmt.Sprintf("the last %d pages", limit)
+	}
+	if days := keepDays(); days > 0 {
+		keep += fmt.Sprintf(", %d days at most", days)
 	}
 	fmt.Fprintf(&b, "<footer>Keeping %s in <code>%s</code></footer>\n", keep, html.EscapeString(stateDir()))
 	b.WriteString("</main>\n</body>\n</html>\n")
