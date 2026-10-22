@@ -18,14 +18,25 @@ orchestrator can hand all the page work to a cheap sub-agent.
 
 ## Install
 
+From a checkout, which is the path that works today:
+
 ```sh
-go install github.com/sthbryan/vistan/cmd/vistan@latest   # into $GOBIN
+git clone https://github.com/sthbryan/vistan.git
+cd vistan
+go install ./cmd/vistan     # into $GOBIN
 ```
 
-Or from a checkout:
+Or build the binary in place:
 
 ```sh
 go build -o vistan ./cmd/vistan
+```
+
+The repository is private for now, so the module path only resolves with access and
+Go's git credentials:
+
+```sh
+GOPRIVATE=github.com/sthbryan go install github.com/sthbryan/vistan/cmd/vistan@latest
 ```
 
 `brew install sthbryan/tap/vistan` works once a release exists; the formula expects
