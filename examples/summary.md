@@ -10,6 +10,7 @@ Seven templates, a treemap for `map`, and one command to find what you generated
 - `selection` options can carry figures, code and prose, not just bullets.
 - `diagram`, `adr` and `changelog` got fixed sections: context/reading, options and links, one block per release.
 - `vistan index` lists every page with its link and template name.
+- Plans render checkboxes with progress, labelled callouts, a file-change list and a `waiting on you` panel.
 - `###` subheads render, and bold that wraps code no longer leaks its asterisks.
 
 ## Verification
