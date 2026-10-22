@@ -33,6 +33,7 @@ go build -o vistan .
 ```sh
 vistan <file.md>                 # print in the terminal
 vistan serve <file.md>           # build the page, start the server, open it
+vistan map [path] [--depth N]    # scan a directory and serve its map
 vistan stop                      # stop the server
 vistan new <template>            # print a template to stdout
 vistan templates                 # list templates
@@ -55,8 +56,10 @@ the file. That is the hook an agent can check before showing you anything.
 | `plan` | Decisions, Rejected, Verification, Your move | agreeing on work before doing it |
 | `summary` | What changed, Verification, Pending | reporting work just finished |
 | `selection` | one section per option | asking you to pick, with a copyable answer |
-| `map` | Entry points, Modules, Data flow, Gotchas | orienting someone in a codebase |
+| `map` | Overview, Tree, Entry points, Largest files | orienting someone in a codebase |
 | `diagram` | free form around one fenced diagram | showing a flow or a layout |
+| `adr` | Status, Context, Decision, Consequences | recording why a design choice was made |
+| `changelog` | Added, Changed, Fixed, Removed | telling users what changed in a release |
 
 Each template is a real `.md` file in `templates/`, embedded into the binary, and
 starts with a marker:
@@ -85,6 +88,26 @@ For a decision:
 2. Write the question as the title and one section per option.
 3. `vistan serve choice.md`
 4. The human picks a radio, copies `B: <option>`, pastes it back.
+
+## The map command
+
+`vistan map <path>` needs no input document: it scans the directory and builds the
+`map` shape itself.
+
+- **File list.** Inside a git repository it runs `git ls-files --cached --others
+  --exclude-standard`, so your own `.gitignore` decides what counts. Outside a repo it
+  walks the tree and skips `node_modules`, `.git`, `vendor`, `dist`, `build`, `target`,
+  `.next`, `out`, `__pycache__`, `.venv`, `venv`, `.idea`, `.cache`, `coverage`.
+- **Overview.** File count, total size, lines counted, and the top languages by lines.
+- **Tree.** Directories first with their file counts, `--depth` levels deep (default 2),
+  a maximum of 13 entries per directory and `N more` for the rest.
+- **Entry points.** `package.json` with its scripts, `go.mod` module, `Cargo.toml` and
+  `pyproject.toml` names, `Makefile` targets, and the presence of `Dockerfile`,
+  `compose.yaml` or `flake.nix`.
+- **Largest files.** The five files with the most lines, falling back to size.
+
+Lines are only counted for known text extensions under 2MB, so a repository full of
+binaries does not stall the scan. A 150-file project takes about 60ms.
 
 ## How it looks
 

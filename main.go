@@ -18,12 +18,13 @@ func usage(w io.Writer) {
 	fmt.Fprintf(w, `usage: vistan <file.md> | serve <file.md> | stop | new <template> | templates
 
   serve        build the page, start a local server and open it
+  map [path]   scan a directory and render it as a map (default: .)
   stop         stop the local server
   new          print a template to stdout
   templates    list the templates
   --template   override the template declared in the document
 
-Templates: plan, summary, selection, map, diagram.
+Templates: plan, summary, selection, map, diagram, adr, changelog.
 Declare one in the document with  <!-- vistan: map -->  or pass --template.
 
 Env: VISTAN_PORT (default 8765), VISTAN_NO_OPEN=1, VISTAN_CACHE.
@@ -36,7 +37,7 @@ func run(args []string) int {
 	command := "show"
 	if len(args) > 0 {
 		switch args[0] {
-		case "serve", "stop", "new", "templates", "serve-child":
+		case "serve", "stop", "new", "templates", "map", "serve-child":
 			command = args[0]
 			args = args[1:]
 		case "-h", "--help", "help":
@@ -69,6 +70,8 @@ func run(args []string) int {
 		}
 		fmt.Print(text)
 		return 0
+	case "map":
+		return runMap(args)
 	case "serve-child":
 		return serveChild(args)
 	}
@@ -157,7 +160,7 @@ func show(command string, args []string) int {
 			return 2
 		}
 		source = src
-		name = strings.TrimSuffix(filepath.Base(src), ".md")
+		name = pageName(strings.TrimSuffix(filepath.Base(src), ".md"))
 	}
 
 	if templateName == "" {
@@ -179,6 +182,70 @@ func show(command string, args []string) int {
 		return renderTerminal(doc, tpl, source, color, os.Stdout)
 	}
 
+	return serveDoc(doc, tpl, source, name)
+}
+
+// runMap scans a directory and serves the generated map.
+func runMap(args []string) int {
+	path := "."
+	depth := 2
+	for i := 0; i < len(args); i++ {
+		switch args[i] {
+		case "--depth":
+			if i+1 >= len(args) {
+				usage(os.Stderr)
+				return 2
+			}
+			if n, err := strconv.Atoi(args[i+1]); err == nil {
+				depth = n
+			}
+			i++
+		default:
+			if strings.HasPrefix(args[i], "-") && args[i] != "-" {
+				fmt.Fprintf(os.Stderr, "unknown option: %s\n", args[i])
+				return 2
+			}
+			path = args[i]
+		}
+	}
+	if depth < 1 {
+		depth = 1
+	}
+
+	doc, err := scanProject(path, depth)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 2
+	}
+	tpl, _ := lookupTemplate("map")
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 2
+	}
+	return serveDoc(doc, tpl, path, pageName(filepath.Base(abs)))
+}
+
+// pageName keeps generated file names URL-safe.
+func pageName(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9', r == '-', r == '_':
+			b.WriteRune(r)
+		default:
+			b.WriteRune('-')
+		}
+	}
+	out := strings.Trim(b.String(), "-")
+	if out == "" {
+		return "document"
+	}
+	return out
+}
+
+// serveDoc writes the page and makes sure a server is up for it.
+func serveDoc(doc *Doc, tpl Template, source, name string) int {
 	cache := cacheDir()
 	if err := os.MkdirAll(cache, 0o755); err != nil {
 		fmt.Fprintln(os.Stderr, err)

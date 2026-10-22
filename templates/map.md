@@ -2,22 +2,24 @@
 
 # Project map
 
-What this project is, in one line.
+One line of what this project is. `vistan map <path>` fills this shape on its own.
+
+## Overview
+
+- Size, files and the languages that dominate.
+
+## Tree
+
+```
+.
+├── src/
+└── README.md
+```
 
 ## Entry points
 
-- `src/main.ts`: where the process starts.
+- `package.json`: start, build, test
 
-## Modules
+## Largest files
 
-- `src/api/`: HTTP handlers.
-  - `client.ts`: talks to the upstream API.
-- `src/db/`: queries and migrations.
-
-## Data flow
-
-- request -> handler -> db -> response
-
-## Gotchas
-
-- The thing that will bite whoever touches this next.
+- `src/main.ts` (420 lines)

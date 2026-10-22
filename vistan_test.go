@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -54,6 +56,11 @@ func TestParseSections(t *testing.T) {
 	}
 	if intro := trimBlank(d.Intro); len(intro) != 1 || intro[0] != "Intro line." {
 		t.Fatalf("intro = %q", intro)
+	}
+
+	withMarker := parse(t, "<!-- vistan: plan -->\n\n"+planDoc)
+	if intro := trimBlank(withMarker.Intro); len(intro) != 1 {
+		t.Fatalf("marker leaked into intro: %q", intro)
 	}
 }
 
@@ -125,6 +132,36 @@ func TestSelectionPage(t *testing.T) {
 	}
 	if !strings.Contains(html, `value="A: First"`) {
 		t.Fatalf("first option value missing")
+	}
+}
+
+func TestScanProject(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n\nfunc main() {}\n"), 0o644)
+	os.MkdirAll(filepath.Join(dir, "lib"), 0o755)
+	os.WriteFile(filepath.Join(dir, "lib", "util.go"), []byte("package lib\n"), 0o644)
+	os.WriteFile(filepath.Join(dir, "README.md"), []byte("# x\n"), 0o644)
+
+	doc, err := scanProject(dir, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(doc.Sections) != 4 {
+		t.Fatalf("sections = %d, want 4", len(doc.Sections))
+	}
+
+	tree := strings.Join(doc.find("Tree").Body, "\n")
+	if !strings.Contains(tree, "main.go") || !strings.Contains(tree, "lib/") {
+		t.Fatalf("tree missing entries:\n%s", tree)
+	}
+
+	overview := strings.Join(doc.find("Overview").Body, "\n")
+	if !strings.Contains(overview, "3 files") {
+		t.Fatalf("overview = %q", overview)
+	}
+
+	if got := doc.Missing(tpl(t, "map").Required); len(got) != 0 {
+		t.Fatalf("map generated with missing sections: %v", got)
 	}
 }
 

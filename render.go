@@ -22,16 +22,24 @@ const (
 )
 
 var sectionColors = map[string]string{
-	"Decisions":    ansiCyan,
-	"Rejected":     ansiMag,
-	"Verification": ansiGreen,
-	"Your move":    ansiYell,
-	"What changed": ansiCyan,
-	"Pending":      ansiYell,
-	"Entry points": ansiCyan,
-	"Modules":      ansiGreen,
-	"Data flow":    ansiMag,
-	"Gotchas":      ansiYell,
+	"Decisions":     ansiCyan,
+	"Rejected":      ansiMag,
+	"Verification":  ansiGreen,
+	"Your move":     ansiYell,
+	"What changed":  ansiCyan,
+	"Pending":       ansiYell,
+	"Overview":      ansiCyan,
+	"Tree":          ansiGreen,
+	"Entry points":  ansiMag,
+	"Largest files": ansiYell,
+	"Status":        ansiMag,
+	"Context":       ansiCyan,
+	"Decision":      ansiGreen,
+	"Consequences":  ansiYell,
+	"Added":         ansiGreen,
+	"Changed":       ansiCyan,
+	"Fixed":         ansiYell,
+	"Removed":       ansiMag,
 }
 
 var (
@@ -76,18 +84,21 @@ func renderTerminal(d *Doc, t Template, source string, color bool, w io.Writer) 
 		}
 
 		fmt.Fprintf(w, "\n  %s▌%s %s%s%s%s", color, paint(ansiReset), color, prefix, s.Name, paint(ansiReset))
-		if len(body) == 0 {
-			fmt.Fprintf(w, " %s· empty%s\n", paint(ansiDim), paint(ansiReset))
-			continue
-		}
-
 		items := 0
 		for _, line := range body {
 			if bulletLine.MatchString(line) {
 				items++
 			}
 		}
-		fmt.Fprintf(w, " %s· %d%s\n", paint(ansiDim), items, paint(ansiReset))
+		switch {
+		case len(body) == 0:
+			fmt.Fprintf(w, " %s· empty%s\n", paint(ansiDim), paint(ansiReset))
+			continue
+		case items > 0:
+			fmt.Fprintf(w, " %s· %d%s\n", paint(ansiDim), items, paint(ansiReset))
+		default:
+			fmt.Fprint(w, "\n")
+		}
 
 		for _, line := range body {
 			if fenceLine.MatchString(line) {
@@ -248,7 +259,12 @@ func renderHTML(d *Doc, t Template, source string) string {
 				items++
 			}
 		}
-		fmt.Fprintf(&b, "<section>\n<h2>%s <span>%d</span></h2>\n", inline(s.Name), items)
+		b.WriteString("<section>\n")
+		if items > 0 {
+			fmt.Fprintf(&b, "<h2>%s <span>%d</span></h2>\n", inline(s.Name), items)
+		} else {
+			fmt.Fprintf(&b, "<h2>%s</h2>\n", inline(s.Name))
+		}
 		if len(body) == 0 {
 			b.WriteString("<p class=\"empty\">no content</p>\n")
 		} else {

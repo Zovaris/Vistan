@@ -21,7 +21,7 @@ type Doc struct {
 
 var (
 	fenceLine = regexp.MustCompile("^[ \t]*```")
-	marker    = regexp.MustCompile(`vistan:[ \t]*([a-z][a-z-]*)`)
+	marker    = regexp.MustCompile(`^[ \t]*<!--[ \t]*vistan:[ \t]*([a-z][a-z-]*)[ \t]*-->[ \t]*$`)
 )
 
 // Parse reads the subset of Markdown vistan understands: one "# " title,
@@ -42,6 +42,8 @@ func Parse(lines []string) *Doc {
 
 	for _, line := range lines {
 		switch {
+		case marker.MatchString(line):
+			continue
 		case fenceLine.MatchString(line):
 			inFence = !inFence
 			add(line)
@@ -107,8 +109,10 @@ var templateList = []Template{
 	{"plan", []string{"Decisions", "Rejected", "Verification", "Your move"}, "Plan complete"},
 	{"summary", []string{"What changed", "Verification", "Pending"}, "Summary complete"},
 	{"selection", nil, "Decision complete"},
-	{"map", []string{"Entry points", "Modules", "Data flow", "Gotchas"}, "Map complete"},
+	{"map", []string{"Overview", "Tree", "Entry points", "Largest files"}, "Map complete"},
 	{"diagram", nil, "Diagram complete"},
+	{"adr", []string{"Status", "Context", "Decision", "Consequences"}, "Decision record complete"},
+	{"changelog", nil, "Changelog complete"},
 }
 
 func lookupTemplate(name string) (Template, bool) {
