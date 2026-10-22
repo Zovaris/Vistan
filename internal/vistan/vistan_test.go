@@ -503,6 +503,27 @@ func TestLastSeen(t *testing.T) {
 	}
 }
 
+func TestActivityStrip(t *testing.T) {
+	now := time.Now()
+	pages := []pageEntry{
+		{mod: now}, {mod: now}, {mod: now},
+		{mod: now.AddDate(0, 0, -3)},
+	}
+	strip := activityStrip(pages)
+	if got := strings.Count(strip, `class="cell`); got != 30 {
+		t.Fatalf("cells = %d, want 30", got)
+	}
+	if !strings.Contains(strip, fmt.Sprintf(`class="cell l3" title="%s · 3 pages"`, now.Format("2 Jan"))) {
+		t.Fatalf("today is not the darkest cell: %s", strip)
+	}
+	if !strings.Contains(strip, `title="`+now.AddDate(0, 0, -3).Format("2 Jan")+` · 1 page"`) {
+		t.Fatalf("single-page day missing or mislabelled")
+	}
+	if empty := activityStrip(nil); strings.Count(empty, `l0`) != 30 {
+		t.Fatalf("empty history is not thirty empty cells")
+	}
+}
+
 func TestIndexGroupsByProject(t *testing.T) {
 	now := time.Now()
 	pages := []pageEntry{

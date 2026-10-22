@@ -269,6 +269,30 @@ func groupByProject(pages []pageEntry) []projectGroup {
 	return groups
 }
 
+func activityStrip(pages []pageEntry) string {
+	const span = 30
+	counts := map[string]int{}
+	for _, page := range pages {
+		counts[page.mod.Local().Format("2006-01-02")]++
+	}
+
+	now := time.Now()
+	var b strings.Builder
+	b.WriteString(`<div class="heat" role="img" aria-label="Pages generated per day over the last 30 days">` + "\n")
+	for i := span - 1; i >= 0; i-- {
+		day := now.AddDate(0, 0, -i)
+		n := counts[day.Format("2006-01-02")]
+		level := n
+		if level > 4 {
+			level = 4
+		}
+		fmt.Fprintf(&b, `<span class="cell l%d" title="%s · %d page%s"></span>`+"\n",
+			level, day.Format("2 Jan"), n, pluralSuffix(n))
+	}
+	b.WriteString("</div>\n")
+	return b.String()
+}
+
 func indexHTML(pages []pageEntry) string {
 	var b strings.Builder
 	b.WriteString("<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
@@ -284,6 +308,16 @@ func indexHTML(pages []pageEntry) string {
 	if len(pages) == 0 {
 		b.WriteString("<p class=\"empty\">Nothing generated yet. Run <code>vistan serve file.md</code> or <code>vistan map .</code>.</p>\n")
 	} else {
+		now := time.Now()
+		today := 0
+		for _, page := range pages {
+			if stamp := page.mod.Local(); stamp.Year() == now.Year() && stamp.YearDay() == now.YearDay() {
+				today++
+			}
+		}
+		fmt.Fprintf(&b, "<div class=\"heat-cap\"><span>Last 30 days · %s → today</span><span>%d today</span></div>\n",
+			now.AddDate(0, 0, -29).Format("2 Jan"), today)
+		b.WriteString(activityStrip(pages))
 		for _, group := range groupByProject(pages) {
 			fmt.Fprintf(&b, "<h2 class=\"proj\">%s <span>%d page%s · last %s</span></h2>\n<ul class=\"pages\">\n",
 				html.EscapeString(group.name), len(group.pages), pluralSuffix(len(group.pages)), lastSeen(group.last))
@@ -307,7 +341,17 @@ func indexHTML(pages []pageEntry) string {
 	return b.String()
 }
 
-const indexCSS = `h2.proj { display: flex; align-items: baseline; justify-content: space-between; gap: 1em;
+const indexCSS = `.heat-cap { display: flex; justify-content: space-between; gap: 1em; margin: 34px 0 6px;
+  font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif; font-size: 0.6rem;
+  letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.heat { display: grid; grid-template-columns: repeat(30, 1fr); gap: 3px; margin-top: 8px; }
+.heat .cell { aspect-ratio: 1; border-radius: 2px; background: var(--ink); opacity: 0.05; }
+.heat .cell:hover { outline: 1px solid var(--ink); outline-offset: 1px; opacity: 1; }
+.heat .l1 { opacity: 0.25; }
+.heat .l2 { opacity: 0.45; }
+.heat .l3 { opacity: 0.65; }
+.heat .l4 { opacity: 0.9; }
+h2.proj { display: flex; align-items: baseline; justify-content: space-between; gap: 1em;
   margin: 38px 0 0; padding-top: 16px; border-top: 1px solid var(--rule);
   font-size: 1rem; font-style: normal; font-weight: 400; }
 h2.proj span { font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif;

@@ -168,6 +168,10 @@ fizza   2 pages · last 20 Oct
 Every render also rewrites `index.html`, so the `← History` link at the top of each
 page always resolves, even before you run `vistan history` for the first time.
 
+Above the groups, a strip of 30 squares shows how many pages each of the last 30 days
+produced; darker is more, and the tooltip carries the date and the count. It is computed
+from the file timestamps, so nothing extra is stored for it.
+
 The page groups entries by project, newest activity first, with a count and the last
 time each project generated something. The project is the nearest directory with a
 `.git`, not the directory the command ran in, so a page built from `examples/` still
