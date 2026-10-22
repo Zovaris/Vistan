@@ -10,7 +10,7 @@ person using it.
 ## Why
 
 Chat output is a transcript. A plan, a summary or a decision has a shape, and the
-shape is what makes it readable. vistan takes a document that follows one of five
+shape is what makes it readable. vistan takes a document that follows one of seven
 shapes, checks it is complete, and renders it.
 
 ## Install
@@ -58,9 +58,9 @@ the file. That is the hook an agent can check before showing you anything.
 | `summary` | What changed, Verification, Pending | reporting work just finished |
 | `selection` | one section per option | asking you to pick, with a copyable answer |
 | `map` | Overview, Tree, Entry points, Largest files | orienting someone in a codebase |
-| `diagram` | free form around one fenced diagram | showing a flow or a layout |
-| `adr` | Status, Context, Decision, Consequences | recording why a design choice was made |
-| `changelog` | Added, Changed, Fixed, Removed | telling users what changed in a release |
+| `diagram` | Context, Diagram, Reading | showing a flow or a layout |
+| `adr` | Status, Context, Decision, Consequences (plus Options considered and Links) | recording why a design choice was made |
+| `changelog` | one section per release, `### Added` / Changed / Fixed / Removed inside | telling users what changed in a release |
 
 Each template is a real `.md` file in `templates/`, embedded into the binary, and
 starts with a marker:
@@ -72,9 +72,14 @@ starts with a marker:
 That marker is how `vistan serve examples/map.md` knows which shape to draw; there is
 no flag to remember. `--template` exists only to override it.
 
-`plan`, `summary` and `map` are validated: a missing or empty section turns the footer
-into a warning and makes the terminal exit with `1`. `selection` and `diagram` are free
-form.
+`plan`, `summary`, `map`, `diagram` and `adr` are validated: a missing or empty
+section turns the footer into a warning and makes the terminal exit with `1`.
+`selection` and `changelog` are free form, because their section names carry the
+content.
+
+`###` subheadings are allowed inside any section; `changelog` uses them for the
+change groups, and `adr` gets its status rendered as a chip whose colour follows the
+word (accepted, proposed, rejected, superseded, deprecated).
 
 ## The agent workflow
 
@@ -92,9 +97,15 @@ For a decision:
 
 ## The index
 
-`vistan index` writes `index.html` into the cache with every generated page, newest
-first, and serves it at the root URL. It is how you get back to a page you generated
-an hour ago without remembering its name.
+`vistan index` lists every generated page with its link and template name, writes
+`index.html` into the cache with the same list, and serves it at the root URL. It is
+how you get back to a page you generated an hour ago without remembering its name:
+
+```
+7 pages  http://127.0.0.1:8765/
+  Where should generated pages live? selection http://127.0.0.1:8765/selection.html
+  Changelog                          changelog http://127.0.0.1:8765/changelog.html
+```
 
 ## The map command
 
@@ -105,6 +116,10 @@ an hour ago without remembering its name.
   --exclude-standard`, so your own `.gitignore` decides what counts. Outside a repo it
   walks the tree and skips `node_modules`, `.git`, `vendor`, `dist`, `build`, `target`,
   `.next`, `out`, `__pycache__`, `.venv`, `venv`, `.idea`, `.cache`, `coverage`.
+- **Treemap.** Above the sections, an inline SVG shows where the bytes are: area is
+  proportional to size, the squarified layout keeps boxes close to square, colour marks
+  the largest top-level entries and a child box inherits its parent's colour. It is SVG
+  drawn by the binary, not an image and not a dependency.
 - **Overview.** File count, total size, lines counted and a bar chart of the top languages by lines.
 - **Tree.** Directories first with their file count and size, `--depth` levels deep
   (default 2), a maximum of 13 entries per directory and `N more` for the rest.
@@ -121,12 +136,14 @@ binaries does not stall the scan. A 150-file project takes about 60ms.
 A deliberate subset, not full Markdown:
 
 - One `# ` title, `## ` sections, paragraphs, and bullet lists indented two spaces per level.
+- `###` subheadings, rendered as small caps labels.
 - Fenced code blocks, shown in a bordered monospace box with horizontal scroll.
-- Inline `` `code` ``, `**bold**`, and `[links](https://example.com)`. Links are only
-  rendered for `http`, `https`, `mailto`, `#` and relative paths.
+- Inline `` `code` ``, `**bold**`, `[links](https://example.com)` and bold that contains
+  code. Links are only rendered for `http`, `https`, `mailto`, `#` and relative paths.
 - Images: `![caption](path.png)` is inlined into the page as a data URI, so the HTML stays
   self-contained and works without the original file next to it. Anything over 3MB is left
-  as a plain reference.
+  as a plain reference. A `selection` option can carry figures, code and prose, not just
+  bullets.
 
 Anything else stays literal text, which is why a broken document still renders.
 
