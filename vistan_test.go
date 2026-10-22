@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func parse(t *testing.T, text string) *Doc {
@@ -284,6 +285,19 @@ func TestTreemapArtifact(t *testing.T) {
 	}
 	if html := renderHTML(doc, tpl(t, "map"), "x", ""); !strings.Contains(html, `<div class="art">`) {
 		t.Fatalf("treemap not rendered into the page")
+	}
+}
+
+func TestIndexListsPagesWithLinks(t *testing.T) {
+	pages := []pageEntry{
+		{name: "plan.html", title: "A plan", tpl: "plan", mod: time.Unix(0, 0)},
+		{name: "adr.html", title: "An ADR", tpl: "adr", mod: time.Unix(0, 0)},
+	}
+	html := indexHTML(pages)
+	for _, want := range []string{`href="plan.html"`, `href="adr.html"`, ">plan<", ">adr<"} {
+		if !strings.Contains(html, want) {
+			t.Fatalf("index missing %q", want)
+		}
 	}
 }
 

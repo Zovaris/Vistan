@@ -11,11 +11,15 @@ import (
 	"time"
 )
 
-var titleTag = regexp.MustCompile(`<h1>(.*?)</h1>`)
+var (
+	titleTag = regexp.MustCompile(`<h1>(.*?)</h1>`)
+	tplTag   = regexp.MustCompile(`<body class="tpl-([a-z]+)`)
+)
 
 type pageEntry struct {
 	name  string
 	title string
+	tpl   string
 	mod   time.Time
 }
 
@@ -46,6 +50,9 @@ func runIndex() int {
 			if m := titleTag.FindSubmatch(b); m != nil {
 				page.title = html.UnescapeString(string(m[1]))
 			}
+			if m := tplTag.FindSubmatch(b); m != nil {
+				page.tpl = string(m[1])
+			}
 		}
 		pages = append(pages, page)
 	}
@@ -67,12 +74,23 @@ func runIndex() int {
 	if pid, known, ok := readPidFile(cache); ok && pid > 0 {
 		port = known
 	}
-	url := fmt.Sprintf("http://127.0.0.1:%d/", port)
-	fmt.Println(url)
+	base := fmt.Sprintf("http://127.0.0.1:%d/", port)
+	fmt.Printf("%d pages  %s\n", len(pages), base)
+	for _, page := range pages {
+		fmt.Printf("  %-34s %-9s %s%s\n", clip(page.title, 34), page.tpl, base, page.name)
+	}
 	if os.Getenv("VISTAN_NO_OPEN") == "" {
-		openBrowser(url)
+		openBrowser(base)
 	}
 	return 0
+}
+
+func clip(s string, n int) string {
+	runes := []rune(s)
+	if len(runes) <= n {
+		return s
+	}
+	return string(runes[:n-1]) + "…"
 }
 
 func indexHTML(pages []pageEntry) string {
@@ -90,8 +108,8 @@ func indexHTML(pages []pageEntry) string {
 	} else {
 		b.WriteString("<ul class=\"pages\">\n")
 		for _, page := range pages {
-			fmt.Fprintf(&b, "<li><a href=\"%s\">%s</a><span>%s</span></li>\n",
-				html.EscapeString(page.name), html.EscapeString(page.title), page.mod.Format("15:04"))
+			fmt.Fprintf(&b, "<li><a href=\"%s\">%s</a><span>%s</span><span>%s</span></li>\n",
+				html.EscapeString(page.name), html.EscapeString(page.title), html.EscapeString(page.tpl), page.mod.Format("15:04"))
 		}
 		b.WriteString("</ul>\n")
 	}
@@ -100,10 +118,13 @@ func indexHTML(pages []pageEntry) string {
 }
 
 const indexCSS = `.pages { list-style: none; margin: 32px 0 0; padding: 0; }
-.pages li { display: flex; align-items: baseline; justify-content: space-between; gap: 1em;
+.pages li { display: flex; align-items: baseline; gap: 1em;
   padding: 12px 0; border-top: 1px solid var(--rule); }
+.pages li a { flex: 1; }
 .pages a { color: inherit; text-decoration: none; }
 .pages a:hover { text-decoration: underline; text-underline-offset: 0.15em; }
 .pages span { color: var(--muted); font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
   font-size: 0.72rem; font-variant-numeric: tabular-nums; }
+.pages li span:first-of-type { letter-spacing: 0.08em; text-transform: uppercase; font-size: 0.64rem; }
+.pages li span:empty { display: none; }
 `
