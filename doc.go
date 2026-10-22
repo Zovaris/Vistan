@@ -104,6 +104,7 @@ var templateList = []Template{
 	{"selection", nil, "Decision complete"},
 	{"map", []string{"Overview", "Tree", "Entry points", "Largest files"}, "Map complete"},
 	{"diagram", []string{"Context", "Diagram", "Reading"}, "Diagram complete"},
+	{"graph", []string{"Context", "Graph", "Reading"}, "Graph complete"},
 	{"adr", []string{"Status", "Context", "Decision", "Consequences"}, "Decision record complete"},
 	{"changelog", nil, "Changelog complete"},
 	{"review", nil, "Review complete"},

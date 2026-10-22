@@ -674,6 +674,7 @@ func renderHTML(d *Doc, t Template, source, baseDir string) string {
 
 	selection := t.Name == "selection"
 	review := t.Name == "review"
+	graph := t.Name == "graph"
 	if selection {
 		b.WriteString("<fieldset class=\"opts\">\n<legend class=\"sr-only\">Pick one</legend>\n")
 	} else {
@@ -701,6 +702,15 @@ func renderHTML(d *Doc, t Template, source, baseDir string) string {
 			if id, severity, location, ok := parseFinding(s.Name); ok {
 				renderFinding(&b, id, severity, location, body, baseDir)
 				findings++
+				continue
+			}
+		}
+
+		if graph && strings.EqualFold(s.Name, "Graph") {
+			if svg := graphSVG(body); svg != "" {
+				b.WriteString("<section class=\"drawing\">\n<div class=\"art\">")
+				b.WriteString(svg)
+				b.WriteString("</div>\n</section>\n")
 				continue
 			}
 		}
@@ -939,6 +949,15 @@ figcaption { margin-top: 6px; color: var(--muted); font-size: 0.75rem;
   background-image: radial-gradient(circle, var(--rule) 1px, transparent 1px);
   background-size: 16px 16px; background-position: 8px 8px; }
 .tpl-diagram section:first-of-type pre { padding: 30px 28px; }
+
+.tpl-graph main { width: min(52rem, calc(100vw - 2.5rem)); }
+.tpl-graph section.drawing { border-top: 0; padding-top: 8px; margin-top: 12px; }
+.art .graph .node rect { fill: var(--field); stroke: var(--rule); stroke-width: 1; }
+.art .graph .node text { font-size: 11px; fill: var(--ink); fill-opacity: 0.85; }
+.art .graph .edge { fill: none; stroke: var(--muted); stroke-width: 1.1; stroke-opacity: 0.55; }
+.art .graph .edge.back { stroke-dasharray: 4 4; }
+.art .graph .arrowhead { fill: var(--muted); fill-opacity: 0.7; }
+.art .graph .edge-label { font-size: 9px; fill: var(--muted); fill-opacity: 0.8; }
 
 .tpl-adr section.status { border-top: 0; margin-top: 14px; padding-top: 0; }
 .tpl-adr section.status h2 { display: none; }
