@@ -53,6 +53,7 @@ vistan history [--json]          # the saved pages, grouped by project, or as JS
 vistan index                     # same as history
 vistan open <name>               # reopen a saved page by name or prefix
 vistan rerender <name>           # rebuild a saved page from its stored source
+vistan rerender --all            # rebuild every saved page that has a source
 vistan rm <name>                 # delete saved pages
 vistan brief                     # the instructions for the agent that writes pages
 vistan stop                      # stop the server
@@ -207,6 +208,9 @@ the name matches several. `vistan rerender treemap` reads the stored `.md`, pick
 template from its marker, and rewrites the page with the current CSS and templates. It
 keeps the original source label and the file timestamp, so the history order and the
 age limit do not shift; `map` pages have no source and cannot be re-rendered. `vistan
+rerender --all` does the same for every saved page, skips the ones without a source and
+prints how many it rebuilt, so changing a template is one command; it exits `2` when a
+page fails, after rebuilding the rest. `vistan
 rm` deletes pages and rewrites `index.html`, so the list never links to a file that is
 gone.
 

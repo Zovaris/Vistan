@@ -632,6 +632,39 @@ func TestRerenderWithoutSource(t *testing.T) {
 	}
 }
 
+func TestRerenderAllSkipsPagesWithoutSource(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("VISTAN_CACHE", dir)
+	lines := strings.Split("<!-- vistan: plan -->\n\n# P\n\n## Decisions\n\n- a", "\n")
+	if err := writePage(dir, "plan", `<html><body class="tpl-plan"><h1>stale</h1></body></html>`, lines); err != nil {
+		t.Fatal(err)
+	}
+	mapPage := `<html><body class="tpl-map"><h1>M</h1></body></html>`
+	if err := os.WriteFile(filepath.Join(dir, "map.html"), []byte(mapPage), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	stamp := time.Date(2020, 1, 2, 3, 4, 5, 0, time.UTC)
+	os.Chtimes(filepath.Join(dir, "plan.html"), stamp, stamp)
+
+	if code := rerenderAll(); code != 0 {
+		t.Fatalf("rerender --all = %d", code)
+	}
+
+	b, err := os.ReadFile(filepath.Join(dir, "plan.html"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(b), "stale") || !strings.Contains(string(b), "<h1>P</h1>") {
+		t.Fatalf("page was not rebuilt from its source")
+	}
+	if info, err := os.Stat(filepath.Join(dir, "plan.html")); err != nil || !info.ModTime().Equal(stamp) {
+		t.Fatalf("rerender --all reset the page date: %v", err)
+	}
+	if b, err := os.ReadFile(filepath.Join(dir, "map.html")); err != nil || string(b) != mapPage {
+		t.Fatalf("page without source was touched: %v", err)
+	}
+}
+
 func TestHistoryJSON(t *testing.T) {
 	dir := t.TempDir()
 	page := `<html><body class="tpl-plan"><h1>A &amp; B</h1><meta name="vistan-project" content="demo"></body></html>`

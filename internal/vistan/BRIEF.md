@@ -20,6 +20,7 @@ vistan history                      # saved pages, grouped by project
 vistan history --json               # the same list as JSON, no server
 vistan open <name>                  # reopen a saved page by name or prefix
 vistan rerender <name>              # rebuild a saved page from its stored source
+vistan rerender --all               # rebuild every saved page that has a source
 vistan rm <name>                    # delete saved pages
 vistan templates                    # list template names
 vistan brief                        # this file
@@ -32,7 +33,7 @@ survives the command. Pass the URL to the human; do not describe the page instea
 Pages are kept between runs in the user state directory: at most 50, nothing older
 than 30 days. A page from a month ago is gone even if the directory is almost empty.
 Each page keeps its source Markdown next to it, so `vistan rerender plan` rebuilds it
-with the current templates and the source can be read as text. `vistan history` groups them by project with a count and
+with the current templates, and `vistan rerender --all` rebuilds every page at once and the source can be read as text. `vistan history` groups them by project with a count and
 the last time each project wrote one, so a page from an hour ago is one command away.
 Use `vistan history --json` when you need the list as data instead of prose.
 

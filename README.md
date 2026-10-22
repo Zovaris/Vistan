@@ -95,6 +95,7 @@ re-rendered with the current templates and read as plain text:
 
 ```sh
 vistan rerender plan          # picks the template from the stored marker
+vistan rerender --all         # rebuild every page that has a source
 ```
 
 ## More

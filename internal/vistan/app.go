@@ -26,6 +26,7 @@ func usage(w io.Writer) {
   history --json  print the saved pages as JSON, no server
   open <name>  open a saved page by name or prefix
   rerender <name>  rebuild a saved page from its stored source
+  rerender --all   rebuild every saved page that has a stored source
   rm <name>    delete saved pages
   stop         stop the local server
   new          print a template to stdout
