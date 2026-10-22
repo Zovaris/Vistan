@@ -23,9 +23,10 @@ func usage(w io.Writer) {
   stop         stop the local server
   new          print a template to stdout
   templates    list the templates
+  brief        print the brief for the agent that writes the pages
   --template   override the template declared in the document
 
-Templates: plan, summary, selection, map, diagram, adr, changelog.
+Templates: plan, summary, selection, review, map, diagram, adr, changelog.
 Declare one in the document with  <!-- vistan: map -->  or pass --template.
 
 Env: VISTAN_PORT (default 8765), VISTAN_NO_OPEN=1, VISTAN_CACHE.
@@ -38,7 +39,7 @@ func run(args []string) int {
 	command := "show"
 	if len(args) > 0 {
 		switch args[0] {
-		case "serve", "stop", "new", "templates", "map", "index", "serve-child":
+		case "serve", "stop", "new", "templates", "map", "index", "brief", "serve-child":
 			command = args[0]
 			args = args[1:]
 		case "-h", "--help", "help":
@@ -58,6 +59,9 @@ func run(args []string) int {
 		for _, t := range templateList {
 			fmt.Println(t.Name)
 		}
+		return 0
+	case "brief":
+		fmt.Print(agentBrief)
 		return 0
 	case "new":
 		if len(args) < 1 {

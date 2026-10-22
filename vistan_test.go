@@ -379,6 +379,56 @@ func TestTerminalTasksAndCallouts(t *testing.T) {
 	}
 }
 
+func TestReviewFindings(t *testing.T) {
+	d := parse(t, "# R\n\n## Tests\n\n- [x] go test\n- [ ] e2e\n\n## F1 · Blocker · `server.go:42`\n\nBroken.\n\n**Fix:** compare safely.\n\n## Notes\n\n- nothing else\n")
+	html := renderHTML(d, tpl(t, "review"), "x.md", "")
+	for _, want := range []string{
+		`class="finding sev-blocker" id="f1"`,
+		`<span class="sev">Blocker</span>`,
+		`<code class="loc">server.go:42</code>`,
+		`value="F1"`,
+		`<h2>Tests <span>1/2</span></h2>`,
+		`<h2>Notes <span>1</span></h2>`,
+		`<strong>Fix:</strong> compare safely.`,
+		`id="ans"`,
+		`<b>1</b> finding`,
+		`<b>1</b> blocker`,
+	} {
+		if !strings.Contains(html, want) {
+			t.Fatalf("review page missing %q", want)
+		}
+	}
+}
+
+func TestReviewWithoutFindingsHasNoDecisionPanel(t *testing.T) {
+	d := parse(t, "# R\n\n## Tests\n\n- [x] go test\n")
+	html := renderHTML(d, tpl(t, "review"), "x.md", "")
+	if strings.Contains(html, `id="ans"`) {
+		t.Fatalf("decision panel rendered with no findings")
+	}
+}
+
+func TestParseFinding(t *testing.T) {
+	id, severity, location, ok := parseFinding("F2 · Major · `render.go:88`")
+	if !ok || id != "F2" || severity != "Major" || location != "render.go:88" {
+		t.Fatalf("parseFinding = %q %q %q %v", id, severity, location, ok)
+	}
+	if _, _, _, ok := parseFinding("Notes"); ok {
+		t.Fatalf("plain section parsed as a finding")
+	}
+	if sev := sevSlug("Pre-existing"); sev != "pre-existing" {
+		t.Fatalf("sevSlug = %q", sev)
+	}
+}
+
+func TestBriefIsEmbedded(t *testing.T) {
+	for _, want := range []string{"vistan new review", "## Commands", "Pick the template"} {
+		if !strings.Contains(agentBrief, want) {
+			t.Fatalf("brief missing %q", want)
+		}
+	}
+}
+
 func TestTemplatesAreEmbedded(t *testing.T) {
 	for _, tpl := range templateList {
 		text, ok := templateText(tpl.Name)

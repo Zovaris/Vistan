@@ -10,8 +10,11 @@ person using it.
 ## Why
 
 Chat output is a transcript. A plan, a summary or a decision has a shape, and the
-shape is what makes it readable. vistan takes a document that follows one of seven
+shape is what makes it readable. vistan takes a document that follows one of eight
 shapes, checks it is complete, and renders it.
+
+`vistan brief` prints the instructions for the agent that writes those pages, so an
+orchestrator can hand all the page work to a cheap sub-agent.
 
 ## Install
 
@@ -35,6 +38,7 @@ vistan <file.md>                 # print in the terminal
 vistan serve <file.md>           # build the page, start the server, open it
 vistan map [path] [--depth N]    # scan a directory and serve its map
 vistan index                     # list every generated page and serve it
+vistan brief                     # the instructions for the agent that writes pages
 vistan stop                      # stop the server
 vistan new <template>            # print a template to stdout
 vistan templates                 # list templates
@@ -61,6 +65,7 @@ the file. That is the hook an agent can check before showing you anything.
 | `diagram` | Context, Diagram, Reading | showing a flow or a layout |
 | `adr` | Status, Context, Decision, Consequences (plus Options considered and Links) | recording why a design choice was made |
 | `changelog` | one section per release, `### Added` / Changed / Fixed / Removed inside | telling users what changed in a release |
+| `review` | one section per finding, named `F1 · Blocker · path:42`, plus Tests and Notes | showing several reviewers' findings, with a decision per finding |
 
 Each template is a real `.md` file in `templates/`, embedded into the binary, and
 starts with a marker:
@@ -80,6 +85,36 @@ content.
 `###` subheadings are allowed inside any section; `changelog` uses them for the
 change groups, and `adr` gets its status rendered as a chip whose colour follows the
 word (accepted, proposed, rejected, superseded, deprecated).
+
+## The review page
+
+A `review` document is one section per finding, and the section name carries the
+finding:
+
+```markdown
+## F1 · Blocker · `render.go:212`
+```
+
+That renders as a card with the id, a severity chip (blocker, critical, major,
+important, minor, nit, question, pre-existing, or any other word), the location in
+monospace, and a checkbox. The body holds the claim and the fix, with code if it helps.
+
+At the bottom the page adds a decision panel: tick the findings to apply and copy
+`Apply F1, F3`, or copy `Reject all findings`. That line is the answer the agent reads
+back; nothing is sent anywhere by itself. The summary strip counts the findings by
+severity and the checkboxes in `## Tests`, so the reader sees the state before reading
+a single finding.
+
+The section names that do not look like a finding (`Tests`, `Notes`, `Summary`) render
+as normal sections.
+
+## Delegating the page work
+
+`vistan brief` prints [BRIEF.md](BRIEF.md): what the tool does, which template to pick,
+the markup that becomes a component, the review workflow and the exit codes. Give that
+text to the sub-agent that writes the pages, and keep the orchestrator for deciding
+what to review and what to apply. The brief is embedded in the binary, so it always
+matches the version that renders the page.
 
 ## The agent workflow
 

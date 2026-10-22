@@ -455,7 +455,28 @@ func statStrip(d *Doc) string {
 		files += countChanges(s.Body)
 	}
 
+	sevCount := map[string]int{}
+	findings := 0
+	for _, s := range d.Sections {
+		if _, severity, _, ok := parseFinding(s.Name); ok {
+			findings++
+			sevCount[sevSlug(severity)]++
+		}
+	}
+
 	var parts []string
+	if findings > 0 {
+		parts = append(parts, fmt.Sprintf("<span><b>%d</b> finding%s</span>", findings, pluralSuffix(findings)))
+		for _, severity := range []string{"blocker", "critical", "major", "important", "minor", "nit", "question", "pre-existing"} {
+			if n := sevCount[severity]; n > 0 {
+				label := severity
+				if n > 1 && severity != "pre-existing" {
+					label += "s"
+				}
+				parts = append(parts, fmt.Sprintf("<span><b>%d</b> %s</span>", n, label))
+			}
+		}
+	}
 	if tasks > 0 {
 		parts = append(parts, fmt.Sprintf("<span><b>%d/%d</b> checks</span>", done, tasks))
 	}
@@ -480,6 +501,83 @@ func pluralSuffix(n int) string {
 	}
 	return "s"
 }
+
+func parseFinding(name string) (id, severity, location string, ok bool) {
+	parts := strings.Split(name, "·")
+	if len(parts) < 2 {
+		return "", "", "", false
+	}
+	id = strings.TrimSpace(parts[0])
+	severity = strings.TrimSpace(parts[1])
+	if len(parts) > 2 {
+		location = strings.TrimSpace(strings.Join(parts[2:], " · "))
+	}
+	location = strings.Trim(strings.TrimSpace(location), "`")
+	if id == "" || severity == "" || strings.ContainsAny(id, " \t") {
+		return "", "", "", false
+	}
+	return id, severity, location, true
+}
+
+func sevSlug(severity string) string {
+	var b strings.Builder
+	for _, r := range strings.ToLower(severity) {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9':
+			b.WriteRune(r)
+		default:
+			b.WriteByte('-')
+		}
+	}
+	return strings.Trim(b.String(), "-")
+}
+
+func renderFinding(b *strings.Builder, id, severity, location string, body []string, baseDir string) {
+	anchor := html.EscapeString(strings.ToLower(sevSlug(id)))
+	fmt.Fprintf(b, `<section class="finding sev-%s" id="%s">`+"\n", sevSlug(severity), anchor)
+	fmt.Fprintf(b, `<div class="fhead"><label class="apply"><input type="checkbox" class="pick" value="%s" aria-label="Apply %s"><span>%s</span></label>`,
+		html.EscapeString(id), html.EscapeString(id), html.EscapeString(id))
+	fmt.Fprintf(b, `<span class="sev">%s</span>`, html.EscapeString(severity))
+	if location != "" {
+		fmt.Fprintf(b, `<code class="loc">%s</code>`, html.EscapeString(location))
+	}
+	b.WriteString("</div>\n<div class=\"fbody\">\n")
+	if len(body) == 0 {
+		b.WriteString(`<p class="empty">no detail</p>`)
+	} else {
+		renderBody(b, body, baseDir)
+	}
+	b.WriteString("</div>\n</section>\n")
+}
+
+const reviewDecision = `<section class="decision">
+<div class="dhead"><p class="hint">Tick the findings you want applied, then copy the decision.</p></div>
+<div class="answer">
+<input id="ans" readonly value="Reject all findings" aria-label="Decision to copy">
+<button type="button" id="copy">Copy</button>
+</div>
+<script>
+const boxes = Array.from(document.querySelectorAll('input.pick'));
+const ans = document.getElementById('ans');
+const copy = document.getElementById('copy');
+function sync() {
+  const picked = boxes.filter(b => b.checked).map(b => b.value);
+  ans.value = picked.length ? 'Apply ' + picked.join(', ') : 'Reject all findings';
+}
+boxes.forEach(b => b.addEventListener('change', sync));
+copy.addEventListener('click', async () => {
+  try {
+    await navigator.clipboard.writeText(ans.value);
+    copy.textContent = 'Copied';
+    setTimeout(() => { copy.textContent = 'Copy'; }, 1400);
+  } catch (e) {
+    ans.select();
+    copy.textContent = 'Cmd+C';
+  }
+});
+</script>
+</section>
+`
 
 func statusClass(body []string) string {
 	text := strings.ToLower(strings.Join(body, " "))
@@ -549,11 +647,13 @@ func renderHTML(d *Doc, t Template, source, baseDir string) string {
 	}
 
 	selection := t.Name == "selection"
+	review := t.Name == "review"
 	if selection {
 		b.WriteString("<fieldset class=\"opts\">\n<legend class=\"sr-only\">Pick one</legend>\n")
 	} else {
 		b.WriteString(statStrip(d))
 	}
+	findings := 0
 
 	for i, s := range d.Sections {
 		body := s.BodyTrimmed()
@@ -569,6 +669,14 @@ func renderHTML(d *Doc, t Template, source, baseDir string) string {
 			}
 			b.WriteString("</div>\n</section>\n")
 			continue
+		}
+
+		if review {
+			if id, severity, location, ok := parseFinding(s.Name); ok {
+				renderFinding(&b, id, severity, location, body, baseDir)
+				findings++
+				continue
+			}
 		}
 
 		items, tasks, done := 0, 0, 0
@@ -620,6 +728,10 @@ func renderHTML(d *Doc, t Template, source, baseDir string) string {
 			renderBody(&b, body, baseDir)
 		}
 		b.WriteString("</section>\n")
+	}
+
+	if review && findings > 0 {
+		b.WriteString(reviewDecision)
 	}
 
 	if selection {
@@ -713,6 +825,32 @@ aside.callout.warn, aside.callout.risk { background: #f6e9dd; border-left-color:
 aside.callout.decision { background: #e8ecf3; border-left-color: #8496b4; }
 aside.callout.question { background: #f3eef7; border-left-color: #a58ab8; }
 
+.tpl-review .finding { margin-top: 22px; padding: 16px 0 2px 16px; border-left: 2px solid var(--rule); }
+.tpl-review .fhead { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.7em; }
+.tpl-review .apply { display: flex; align-items: center; gap: 0.45em; cursor: pointer;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; color: var(--muted); }
+.tpl-review .apply input { margin: 0; accent-color: var(--ink); }
+.tpl-review .sev { font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
+  font-size: 0.61rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 1px 8px;
+  border: 1px solid var(--rule); border-radius: 999px; color: var(--muted); }
+.tpl-review .loc { margin-left: auto; background: none; padding: 0; font-size: 0.74rem; color: var(--muted); }
+.tpl-review .fbody { margin-top: 8px; }
+.tpl-review .fbody > :first-child { margin-top: 0; }
+.tpl-review .sev-blocker, .tpl-review .sev-critical { border-left-color: #b4553c; }
+.tpl-review .sev-blocker .sev, .tpl-review .sev-critical .sev { color: #8a3b2c; border-color: #dcc0b6; background: #f6e9e2; }
+.tpl-review .sev-major, .tpl-review .sev-important { border-left-color: #c08a5e; }
+.tpl-review .sev-major .sev, .tpl-review .sev-important .sev { color: #7a5620; border-color: #ddcbaa; background: #f6efdf; }
+.tpl-review .sev-minor { border-left-color: #8496b4; }
+.tpl-review .sev-minor .sev { color: #46586f; border-color: #c3ccdb; background: #eaeef4; }
+.tpl-review .sev-question { border-left-color: #a58ab8; }
+.tpl-review .sev-question .sev { color: #5d4470; border-color: #d3c3dd; background: #f2ecf6; }
+.tpl-review section.decision { margin-top: 42px; padding: 18px 24px 20px; border: 1px solid var(--rule);
+  border-radius: 4px; background: var(--field); }
+.tpl-review section.decision .hint { margin: 0 0 12px; }
+.tpl-review section.decision::before { content: "your decision"; display: block; margin-bottom: 8px;
+  font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif; font-size: 0.62rem;
+  letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); }
+
 .tpl-plan section.move { margin-top: 42px; padding: 20px 24px 22px; border: 1px solid var(--rule);
   border-radius: 4px; background: var(--field); }
 .tpl-plan section.move h2::after { content: "waiting on you"; font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
@@ -804,6 +942,10 @@ figcaption { margin-top: 6px; color: var(--muted); font-size: 0.75rem;
   aside.callout.warn, aside.callout.risk { background: #221a14; }
   aside.callout.decision { background: #171b22; }
   aside.callout.question { background: #1d1822; }
+  .tpl-review .sev-blocker .sev, .tpl-review .sev-critical .sev { color: #d8a295; border-color: #4a302a; background: #261a17; }
+  .tpl-review .sev-major .sev, .tpl-review .sev-important .sev { color: #d6bd8a; border-color: #453a24; background: #221f16; }
+  .tpl-review .sev-minor .sev { color: #a9bcd6; border-color: #2c3644; background: #171c24; }
+  .tpl-review .sev-question .sev { color: #c3aed4; border-color: #3a2f44; background: #1f1a25; }
   ul.changes .add .mark { color: #8fbd95; }
   ul.changes .del .mark { color: #d29a88; }
   ul.changes .move .mark { color: #9aaecb; }

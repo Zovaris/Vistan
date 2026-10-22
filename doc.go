@@ -106,6 +106,7 @@ var templateList = []Template{
 	{"diagram", []string{"Context", "Diagram", "Reading"}, "Diagram complete"},
 	{"adr", []string{"Status", "Context", "Decision", "Consequences"}, "Decision record complete"},
 	{"changelog", nil, "Changelog complete"},
+	{"review", nil, "Review complete"},
 }
 
 func lookupTemplate(name string) (Template, bool) {
@@ -119,6 +120,9 @@ func lookupTemplate(name string) (Template, bool) {
 
 //go:embed templates/*.md
 var templateFiles embed.FS
+
+//go:embed BRIEF.md
+var agentBrief string
 
 func templateText(name string) (string, bool) {
 	b, err := templateFiles.ReadFile("templates/" + name + ".md")
