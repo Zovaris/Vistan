@@ -195,6 +195,17 @@ copy.addEventListener('click', async () => {
 </script>
 `
 
+func absDir(dir string) string {
+	if dir == "" {
+		return ""
+	}
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return dir
+	}
+	return abs
+}
+
 func projectName(baseDir string) string {
 	dir := baseDir
 	if dir == "" {
@@ -233,6 +244,10 @@ func renderHTML(d *Doc, t Template, source, baseDir string) string {
 	b.WriteString(faviconTag)
 	fmt.Fprintf(&b, "<title>%s</title>\n", html.EscapeString(title))
 	fmt.Fprintf(&b, "<meta name=\"vistan-project\" content=\"%s\">\n", html.EscapeString(projectName(baseDir)))
+	fmt.Fprintf(&b, "<meta name=\"vistan-source\" content=\"%s\">\n", html.EscapeString(source))
+	if base := absDir(baseDir); base != "" {
+		fmt.Fprintf(&b, "<meta name=\"vistan-base\" content=\"%s\">\n", html.EscapeString(base))
+	}
 	b.WriteString("<style>\n" + pageCSS + "</style>\n</head>\n<body class=\"tpl-" + t.Name + "\">\n<main>\n")
 	b.WriteString("<a class=\"back\" href=\"/\">← History</a>\n")
 	fmt.Fprintf(&b, "<h1>%s</h1>\n", html.EscapeString(title))

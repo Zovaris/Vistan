@@ -16,6 +16,8 @@ var (
 	titleTag   = regexp.MustCompile(`<h1>(.*?)</h1>`)
 	tplTag     = regexp.MustCompile(`<body class="tpl-([a-z]+)`)
 	projectTag = regexp.MustCompile(`<meta name="vistan-project" content="([^"]*)"`)
+	sourceTag  = regexp.MustCompile(`<meta name="vistan-source" content="([^"]*)"`)
+	baseTag    = regexp.MustCompile(`<meta name="vistan-base" content="([^"]*)"`)
 )
 
 type pageEntry struct {
@@ -72,6 +74,90 @@ func isIndexName(name string) bool {
 func removePage(dir, name string) {
 	os.Remove(filepath.Join(dir, name))
 	os.Remove(filepath.Join(dir, strings.TrimSuffix(name, ".html")+".md"))
+}
+
+func pageMeta(dir, name string) (string, string) {
+	source, base := name+".md", ""
+	b, err := os.ReadFile(filepath.Join(dir, name+".html"))
+	if err != nil {
+		return source, base
+	}
+	if m := sourceTag.FindSubmatch(b); m != nil {
+		source = html.UnescapeString(string(m[1]))
+	}
+	if m := baseTag.FindSubmatch(b); m != nil {
+		base = html.UnescapeString(string(m[1]))
+	}
+	return source, base
+}
+
+func rerenderHTML(dir, name string) (string, []string, error) {
+	lines, err := readFileLines(filepath.Join(dir, name+".md"))
+	if err != nil {
+		return "", nil, err
+	}
+	tplName := DeclaredTemplate(lines)
+	if tplName == "" {
+		tplName = "plan"
+	}
+	tpl, ok := lookupTemplate(tplName)
+	if !ok {
+		return "", nil, fmt.Errorf("unknown template: %s", tplName)
+	}
+	source, baseDir := pageMeta(dir, name)
+	return renderHTML(Parse(lines), tpl, source, baseDir), lines, nil
+}
+
+func runRerender(args []string) int {
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "usage: vistan rerender <name>")
+		return 2
+	}
+	dir := stateDir()
+	path, candidates := resolvePage(dir, args[0])
+	if path == "" {
+		if len(candidates) > 0 {
+			fmt.Fprintf(os.Stderr, "ambiguous: %s\n", strings.Join(candidates, " "))
+			return 2
+		}
+		fmt.Fprintf(os.Stderr, "no page matching %s; run vistan history\n", args[0])
+		return 2
+	}
+
+	name := strings.TrimSuffix(filepath.Base(path), ".html")
+	page, lines, err := rerenderHTML(dir, name)
+	if err != nil {
+		if os.IsNotExist(err) {
+			fmt.Fprintf(os.Stderr, "%s has no stored source; map pages cannot be re-rendered\n", name)
+			return 2
+		}
+		fmt.Fprintln(os.Stderr, err)
+		return 2
+	}
+
+	stamp := time.Now()
+	if info, err := os.Stat(path); err == nil {
+		stamp = info.ModTime()
+	}
+	if err := writePage(dir, name, page, lines); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 2
+	}
+	os.Chtimes(filepath.Join(dir, name+".html"), stamp, stamp)
+	os.Chtimes(filepath.Join(dir, name+".md"), stamp, stamp)
+	keepPages(dir)
+	refreshIndex(dir)
+
+	base := serveBase(dir)
+	if base == "" {
+		return 2
+	}
+	url := base + name + ".html"
+	fmt.Println(url)
+	if os.Getenv("VISTAN_NO_OPEN") == "" {
+		openBrowser(url)
+	}
+	return 0
 }
 
 func writeIndex(dir string, pages []pageEntry) error {

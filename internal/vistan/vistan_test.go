@@ -601,6 +601,37 @@ func TestWritePageKeepsTheSource(t *testing.T) {
 	}
 }
 
+func TestRerenderKeepsTheLabelAndTemplate(t *testing.T) {
+	dir := t.TempDir()
+	lines := strings.Split("<!-- vistan: graph -->\n\n# G\n\n## Context\n\nx\n\n## Graph\n\n```\na --> b\n```\n\n## Reading\n\n- y", "\n")
+	first := renderHTML(Parse(lines), tpl(t, "graph"), "examples/graph.md", "examples")
+	if err := writePage(dir, "graph", first, lines); err != nil {
+		t.Fatal(err)
+	}
+
+	page, got, err := rerenderHTML(dir, "graph")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(page, `<svg class="graph"`) {
+		t.Fatalf("template from the marker was not used")
+	}
+	if !strings.Contains(page, `content="examples/graph.md"`) {
+		t.Fatalf("original source label was not preserved")
+	}
+	if len(got) != len(lines) {
+		t.Fatalf("lines = %d, want %d", len(got), len(lines))
+	}
+}
+
+func TestRerenderWithoutSource(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, "map.html"), []byte(`<html><body class="tpl-map"><h1>M</h1></body></html>`), 0o644)
+	if _, _, err := rerenderHTML(dir, "map"); err == nil {
+		t.Fatalf("rerendered a page with no stored source")
+	}
+}
+
 func TestHistoryJSON(t *testing.T) {
 	dir := t.TempDir()
 	page := `<html><body class="tpl-plan"><h1>A &amp; B</h1><meta name="vistan-project" content="demo"></body></html>`

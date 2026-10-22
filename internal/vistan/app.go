@@ -25,6 +25,7 @@ func usage(w io.Writer) {
   history      list the saved pages and serve them (same as index)
   history --json  print the saved pages as JSON, no server
   open <name>  open a saved page by name or prefix
+  rerender <name>  rebuild a saved page from its stored source
   rm <name>    delete saved pages
   stop         stop the local server
   new          print a template to stdout
@@ -48,7 +49,7 @@ func Run(args []string) int {
 	command := "show"
 	if len(args) > 0 {
 		switch args[0] {
-		case "serve", "stop", "new", "templates", "map", "docs", "index", "history", "open", "rm", "brief", "serve-child":
+		case "serve", "stop", "new", "templates", "map", "docs", "index", "history", "open", "rerender", "rm", "brief", "serve-child":
 			command = args[0]
 			args = args[1:]
 		case "-h", "--help", "help":
@@ -91,6 +92,8 @@ func Run(args []string) int {
 		return runIndex(args)
 	case "open":
 		return runOpen(args)
+	case "rerender":
+		return runRerender(args)
 	case "rm":
 		return runRm(args)
 	case "docs":

@@ -49,6 +49,7 @@ vistan docs docs/             # index every ADR and spec by status
 vistan history                # the saved pages, grouped by project
 vistan history --json         # the same list as JSON, for an agent
 vistan open treemap           # reopen a page by name or prefix
+vistan rerender treemap       # rebuild a page from its stored source
 vistan rm treemap             # delete saved pages
 vistan brief                  # instructions for the agent that writes the pages
 ```
@@ -93,7 +94,7 @@ Each page keeps its source next to it (`plan.html` and `plan.md`), so it can be
 re-rendered with the current templates and read as plain text:
 
 ```sh
-vistan serve ~/.local/state/vistan/plan.md   # or the dir from `vistan history --json`
+vistan rerender plan          # picks the template from the stored marker
 ```
 
 ## More

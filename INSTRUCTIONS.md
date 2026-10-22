@@ -52,6 +52,7 @@ vistan docs [path]               # index every ADR and spec under a directory
 vistan history [--json]          # the saved pages, grouped by project, or as JSON
 vistan index                     # same as history
 vistan open <name>               # reopen a saved page by name or prefix
+vistan rerender <name>           # rebuild a saved page from its stored source
 vistan rm <name>                 # delete saved pages
 vistan brief                     # the instructions for the agent that writes pages
 vistan stop                      # stop the server
@@ -202,8 +203,12 @@ belongs to the repository.
 `index.html` but starts no server and opens no browser, so a script can call it freely.
 
 `vistan open treemap` reopens the one page whose name contains that, and refuses when
-the name matches several. `vistan rm` deletes pages and rewrites `index.html`, so the
-list never links to a file that is gone.
+the name matches several. `vistan rerender treemap` reads the stored `.md`, picks the
+template from its marker, and rewrites the page with the current CSS and templates. It
+keeps the original source label and the file timestamp, so the history order and the
+age limit do not shift; `map` pages have no source and cannot be re-rendered. `vistan
+rm` deletes pages and rewrites `index.html`, so the list never links to a file that is
+gone.
 
 ## The map command
 
