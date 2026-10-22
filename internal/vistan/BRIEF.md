@@ -17,6 +17,7 @@ vistan <page.md>                    # same document in the terminal
 vistan map <path>                   # scan a directory into a map page
 vistan docs [path]                  # index every ADR and spec into one page
 vistan history                      # saved pages, grouped by project
+vistan history --json               # the same list as JSON, no server
 vistan open <name>                  # reopen a saved page by name or prefix
 vistan rm <name>                    # delete saved pages
 vistan templates                    # list template names
@@ -30,6 +31,8 @@ survives the command. Pass the URL to the human; do not describe the page instea
 Pages are kept between runs in the user state directory: at most 50, nothing older
 than 30 days. A page from a month ago is gone even if the directory is almost empty. `vistan history` groups them by project with a count and
 the last time each project wrote one, so a page from an hour ago is one command away.
+Use `vistan history --json` when you need the list as data instead of prose.
+
 
 ## Pick the template
 

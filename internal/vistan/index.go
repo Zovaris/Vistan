@@ -1,6 +1,7 @@
 package vistan
 
 import (
+	"encoding/json"
 	"fmt"
 	"html"
 	"os"
@@ -23,6 +24,7 @@ type pageEntry struct {
 	tpl     string
 	project string
 	mod     time.Time
+	size    int64
 }
 
 func collectPages(dir string) ([]pageEntry, error) {
@@ -40,7 +42,7 @@ func collectPages(dir string) ([]pageEntry, error) {
 		if err != nil {
 			continue
 		}
-		page := pageEntry{name: entry.Name(), title: strings.TrimSuffix(entry.Name(), ".html"), mod: info.ModTime()}
+		page := pageEntry{name: entry.Name(), title: strings.TrimSuffix(entry.Name(), ".html"), mod: info.ModTime(), size: info.Size()}
 		if b, err := os.ReadFile(filepath.Join(dir, entry.Name())); err == nil {
 			if m := titleTag.FindSubmatch(b); m != nil {
 				page.title = html.UnescapeString(string(m[1]))
@@ -74,7 +76,50 @@ func refreshIndex(dir string) {
 	writeIndex(dir, pages)
 }
 
-func runIndex() int {
+type jsonPage struct {
+	Name     string `json:"name"`
+	Title    string `json:"title"`
+	Template string `json:"template"`
+	Project  string `json:"project"`
+	Modified string `json:"modified"`
+	Bytes    int64  `json:"bytes"`
+}
+
+type jsonHistory struct {
+	Dir   string     `json:"dir"`
+	Pages []jsonPage `json:"pages"`
+}
+
+func historyJSON(dir string, pages []pageEntry) ([]byte, error) {
+	out := jsonHistory{Dir: dir, Pages: make([]jsonPage, 0, len(pages))}
+	for _, page := range pages {
+		out.Pages = append(out.Pages, jsonPage{
+			Name:     page.name,
+			Title:    page.title,
+			Template: page.tpl,
+			Project:  page.project,
+			Modified: page.mod.Format(time.RFC3339),
+			Bytes:    page.size,
+		})
+	}
+	b, err := json.MarshalIndent(out, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return append(b, '\n'), nil
+}
+
+func runIndex(args []string) int {
+	asJSON := false
+	for _, arg := range args {
+		if arg == "--json" {
+			asJSON = true
+			continue
+		}
+		fmt.Fprintf(os.Stderr, "unknown option: %s\n", arg)
+		return 2
+	}
+
 	dir := stateDir()
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -89,6 +134,16 @@ func runIndex() int {
 	if err := writeIndex(dir, pages); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
+	}
+
+	if asJSON {
+		b, err := historyJSON(dir, pages)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			return 2
+		}
+		os.Stdout.Write(b)
+		return 0
 	}
 
 	base := serveBase(dir)

@@ -47,6 +47,7 @@ same origin. `vistan stop` ends it.
 vistan map .                  # scan a directory into a map page
 vistan docs docs/             # index every ADR and spec by status
 vistan history                # the saved pages, grouped by project
+vistan history --json         # the same list as JSON, for an agent
 vistan open treemap           # reopen a page by name or prefix
 vistan rm treemap             # delete saved pages
 vistan brief                  # instructions for the agent that writes the pages

@@ -1,6 +1,7 @@
 package vistan
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -568,6 +569,58 @@ func TestIndexGroupsByProject(t *testing.T) {
 	}
 	if strings.Contains(html, "Today<") {
 		t.Fatalf("index still groups by day")
+	}
+}
+
+func TestHistoryJSON(t *testing.T) {
+	dir := t.TempDir()
+	page := `<html><body class="tpl-plan"><h1>A &amp; B</h1><meta name="vistan-project" content="demo"></body></html>`
+	if err := os.WriteFile(filepath.Join(dir, "plan.html"), []byte(page), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	pages, err := collectPages(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, err := historyJSON(dir, pages)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var got struct {
+		Dir   string `json:"dir"`
+		Pages []struct {
+			Name     string `json:"name"`
+			Title    string `json:"title"`
+			Template string `json:"template"`
+			Project  string `json:"project"`
+			Modified string `json:"modified"`
+			Bytes    int64  `json:"bytes"`
+		} `json:"pages"`
+	}
+	if err := json.Unmarshal(b, &got); err != nil {
+		t.Fatalf("invalid json: %v\n%s", err, b)
+	}
+	if got.Dir != dir || len(got.Pages) != 1 {
+		t.Fatalf("history = %+v", got)
+	}
+	entry := got.Pages[0]
+	if entry.Name != "plan.html" || entry.Title != "A & B" || entry.Template != "plan" || entry.Project != "demo" {
+		t.Fatalf("entry = %+v", entry)
+	}
+	if entry.Bytes != int64(len(page)) {
+		t.Fatalf("bytes = %d, want %d", entry.Bytes, len(page))
+	}
+	if _, err := time.Parse(time.RFC3339, entry.Modified); err != nil {
+		t.Fatalf("modified = %q", entry.Modified)
+	}
+
+	empty, err := historyJSON(dir, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(empty), `"pages": []`) {
+		t.Fatalf("empty history is not an empty array: %s", empty)
 	}
 }
 

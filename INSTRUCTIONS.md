@@ -49,7 +49,7 @@ vistan <file.md>                 # print in the terminal
 vistan serve <file.md>           # build the page, start the server, open it
 vistan map [path] [--depth N]    # scan a directory and serve its map
 vistan docs [path]               # index every ADR and spec under a directory
-vistan history                   # the saved pages, grouped by project
+vistan history [--json]          # the saved pages, grouped by project, or as JSON
 vistan index                     # same as history
 vistan open <name>               # reopen a saved page by name or prefix
 vistan rm <name>                 # delete saved pages
@@ -189,6 +189,10 @@ The page groups entries by project, newest activity first, with a count and the 
 time each project generated something. The project is the nearest directory with a
 `.git`, not the directory the command ran in, so a page built from `examples/` still
 belongs to the repository.
+
+`vistan history --json` prints the same list for an agent: `dir`, and for each page
+`name`, `title`, `template`, `project`, `modified` (RFC 3339) and `bytes`. It writes
+`index.html` but starts no server and opens no browser, so a script can call it freely.
 
 `vistan open treemap` reopens the one page whose name contains that, and refuses when
 the name matches several. `vistan rm` deletes pages and rewrites `index.html`, so the
