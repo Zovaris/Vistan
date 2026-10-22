@@ -9,7 +9,7 @@ Eight templates, a treemap for `map`, and one command to find what you generated
 - `vistan map` now draws a squarified SVG treemap above the tree: area is size, colour follows the parent.
 - `selection` options can carry figures, code and prose, not just bullets.
 - `diagram`, `adr` and `changelog` got fixed sections: context/reading, options and links, one block per release.
-- `vistan index` lists every page with its link and template name.
+- `vistan history` lists every saved page by day and project; pages now live in the user state directory and the oldest are pruned after 50.
 - Plans render checkboxes with progress, labelled callouts, a file-change list and a `waiting on you` panel.
 - `review` turns several agents' findings into cards with severity, location and a decision per finding.
 - `vistan brief` prints the instructions the orchestrator can hand to a cheap sub-agent.

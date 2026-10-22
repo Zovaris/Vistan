@@ -8,8 +8,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const version = "0.1.0"
@@ -19,7 +21,7 @@ func usage(w io.Writer) {
 
   serve        build the page, start a local server and open it
   map [path]   scan a directory and render it as a map (default: .)
-  index        list the generated pages and serve them
+  history      list the saved pages and serve them (same as index)
   stop         stop the local server
   new          print a template to stdout
   templates    list the templates
@@ -29,7 +31,11 @@ func usage(w io.Writer) {
 Templates: plan, summary, selection, review, map, diagram, adr, changelog.
 Declare one in the document with  <!-- vistan: map -->  or pass --template.
 
-Env: VISTAN_PORT (default 8765), VISTAN_NO_OPEN=1, VISTAN_CACHE.
+Env: VISTAN_PORT (default 8765), VISTAN_NO_OPEN=1, VISTAN_CACHE, VISTAN_KEEP
+(default 50 pages; 0 keeps all).
+
+Pages are kept between runs, newest first, in the user state directory:
+~/.local/state/vistan, ~/Library/Application Support/vistan or %%AppData%%\vistan.
 `)
 }
 
@@ -39,7 +45,7 @@ func run(args []string) int {
 	command := "show"
 	if len(args) > 0 {
 		switch args[0] {
-		case "serve", "stop", "new", "templates", "map", "index", "brief", "serve-child":
+		case "serve", "stop", "new", "templates", "map", "index", "history", "brief", "serve-child":
 			command = args[0]
 			args = args[1:]
 		case "-h", "--help", "help":
@@ -50,9 +56,12 @@ func run(args []string) int {
 
 	switch command {
 	case "stop":
-		if err := stopServer(cacheDir()); err != nil {
+		if err := stopServer(stateDir(), true); err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			return 2
+		}
+		if legacy := filepath.Join(os.TempDir(), "vistan"); legacy != stateDir() {
+			stopServer(legacy, false)
 		}
 		return 0
 	case "templates":
@@ -75,7 +84,7 @@ func run(args []string) int {
 		}
 		fmt.Print(text)
 		return 0
-	case "index":
+	case "index", "history":
 		return runIndex()
 	case "map":
 		return runMap(args)
@@ -86,11 +95,71 @@ func run(args []string) int {
 	return show(command, args)
 }
 
-func cacheDir() string {
+func stateDir() string {
 	if dir := os.Getenv("VISTAN_CACHE"); dir != "" {
 		return dir
 	}
-	return filepath.Join(os.TempDir(), "vistan")
+	if dir := os.Getenv("XDG_STATE_HOME"); dir != "" {
+		return filepath.Join(dir, "vistan")
+	}
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return filepath.Join(os.TempDir(), "vistan")
+	}
+	if runtime.GOOS == "windows" {
+		if base, err := os.UserConfigDir(); err == nil {
+			return filepath.Join(base, "vistan")
+		}
+	}
+	if runtime.GOOS == "darwin" {
+		return filepath.Join(home, "Library", "Application Support", "vistan")
+	}
+	return filepath.Join(home, ".local", "state", "vistan")
+}
+
+func keepLimit() int {
+	limit := 50
+	if v := os.Getenv("VISTAN_KEEP"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil {
+			limit = n
+		}
+	}
+	return limit
+}
+
+func keepPages(dir string) {
+	limit := keepLimit()
+	if limit <= 0 {
+		return
+	}
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return
+	}
+
+	type page struct {
+		name string
+		mod  time.Time
+	}
+	var pages []page
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() || !strings.HasSuffix(name, ".html") || name == "index.html" {
+			continue
+		}
+		if info, err := entry.Info(); err == nil {
+			pages = append(pages, page{name, info.ModTime()})
+		}
+	}
+	if len(pages) <= limit {
+		return
+	}
+
+	sort.Slice(pages, func(i, j int) bool { return pages[i].mod.After(pages[j].mod) })
+	for _, p := range pages[limit:] {
+		os.Remove(filepath.Join(dir, p.name))
+	}
 }
 
 func serveChild(args []string) int {
@@ -251,7 +320,7 @@ func pageName(s string) string {
 }
 
 func serveDoc(doc *Doc, tpl Template, source, name, baseDir string) int {
-	cache := cacheDir()
+	cache := stateDir()
 	if err := os.MkdirAll(cache, 0o755); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
@@ -261,6 +330,7 @@ func serveDoc(doc *Doc, tpl Template, source, name, baseDir string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
 	}
+	keepPages(cache)
 
 	port := 8765
 	if p := os.Getenv("VISTAN_PORT"); p != "" {

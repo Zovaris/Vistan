@@ -92,16 +92,20 @@ func runServer(dir string, port int) error {
 	return srv.ListenAndServe()
 }
 
-func stopServer(cache string) error {
+func stopServer(cache string, verbose bool) error {
 	pid, _, ok := readPidFile(cache)
 	if !ok {
-		fmt.Println("no server running")
+		if verbose {
+			fmt.Println("no server running")
+		}
 		return nil
 	}
 	if alive(pid) {
 		syscall.Kill(pid, syscall.SIGTERM)
 	}
 	os.Remove(pidPath(cache))
-	fmt.Println("server stopped")
+	if verbose {
+		fmt.Println("server stopped")
+	}
 	return nil
 }

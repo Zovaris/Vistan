@@ -37,7 +37,8 @@ go build -o vistan .
 vistan <file.md>                 # print in the terminal
 vistan serve <file.md>           # build the page, start the server, open it
 vistan map [path] [--depth N]    # scan a directory and serve its map
-vistan index                     # list every generated page and serve it
+vistan history                   # the saved pages, newest first, with links
+vistan index                     # same as history
 vistan brief                     # the instructions for the agent that writes pages
 vistan stop                      # stop the server
 vistan new <template>            # print a template to stdout
@@ -50,6 +51,20 @@ survives the command that launched it, because it is re-executed in its own sess
 Later calls reuse it, so pages accumulate in the same origin. `VISTAN_PORT` changes
 the port, `VISTAN_NO_OPEN=1` skips the browser, `VISTAN_CACHE` moves the generated
 pages and the pid file.
+
+Pages are not temporary. They live in the user state directory and survive a reboot
+and a temp cleanup:
+
+| System | Path |
+|---|---|
+| Linux | `$XDG_STATE_HOME/vistan` or `~/.local/state/vistan` |
+| macOS | `~/Library/Application Support/vistan` |
+| Windows | `%AppData%\vistan` |
+
+Every render writes one page there, and the oldest are deleted once there are more
+than `VISTAN_KEEP` (default 50, `0` keeps everything). Retention runs after a page is
+written, so the directory never grows without bound and `history` never links to a
+file that is gone.
 
 Terminal exit codes: `0` complete, `1` a section is missing or empty, `2` cannot read
 the file. That is the hook an agent can check before showing you anything.
@@ -132,15 +147,19 @@ For a decision:
 
 ## The index
 
-`vistan index` lists every generated page with its link and template name, writes
-`index.html` into the cache with the same list, and serves it at the root URL. It is
-how you get back to a page you generated an hour ago without remembering its name:
+`vistan history` lists every saved page with its time, template, project and link,
+writes `index.html` with the same list, and serves it at the root URL. It is how you
+get back to a page you generated an hour ago without remembering its name:
 
 ```
-7 pages  http://127.0.0.1:8765/
-  Where should generated pages live? selection http://127.0.0.1:8765/selection.html
-  Changelog                          changelog http://127.0.0.1:8765/changelog.html
+8 pages · 1 project  http://127.0.0.1:8765/
+  00:54  review    vistan  Review: the treemap and the index   http://.../review.html
+  00:54  plan      vistan  vistan: a page a human reads        http://.../plan.html
 ```
+
+The page groups entries by day (`Today`, `Yesterday`, then the date) and shows the
+project each page came from, which is the nearest directory with a `.git`. The project
+column is dropped when every page belongs to the same project.
 
 ## The map command
 

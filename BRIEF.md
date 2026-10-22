@@ -15,7 +15,7 @@ vistan new <template> > page.md     # start from the template
 vistan serve page.md                # build, serve and open the page
 vistan <page.md>                    # same document in the terminal
 vistan map <path>                   # scan a directory into a map page
-vistan index                        # every page generated so far, with links
+vistan history                      # every saved page, newest first
 vistan templates                    # list template names
 vistan brief                        # this file
 vistan stop                         # stop the local server
@@ -23,6 +23,10 @@ vistan stop                         # stop the local server
 
 `serve` prints the URL and keeps a detached server on `127.0.0.1:8765`, so the page
 survives the command. Pass the URL to the human; do not describe the page instead.
+
+Pages are kept between runs in the user state directory and the oldest are pruned
+when there are more than 50. `vistan history` lists them by day and project, so a page
+from an hour ago is one command away.
 
 ## Pick the template
 

@@ -624,6 +624,31 @@ copy.addEventListener('click', async () => {
 </script>
 `
 
+func projectName(baseDir string) string {
+	dir := baseDir
+	if dir == "" {
+		wd, err := os.Getwd()
+		if err != nil {
+			return ""
+		}
+		dir = wd
+	}
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return filepath.Base(dir)
+	}
+	for root := abs; ; {
+		if _, err := os.Stat(filepath.Join(root, ".git")); err == nil {
+			return filepath.Base(root)
+		}
+		parent := filepath.Dir(root)
+		if parent == root {
+			return filepath.Base(abs)
+		}
+		root = parent
+	}
+}
+
 func renderHTML(d *Doc, t Template, source, baseDir string) string {
 	var b strings.Builder
 
@@ -635,6 +660,7 @@ func renderHTML(d *Doc, t Template, source, baseDir string) string {
 	b.WriteString("<!doctype html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n")
 	fmt.Fprintf(&b, "<title>%s</title>\n", html.EscapeString(title))
+	fmt.Fprintf(&b, "<meta name=\"vistan-project\" content=\"%s\">\n", html.EscapeString(projectName(baseDir)))
 	b.WriteString("<style>\n" + pageCSS + "</style>\n</head>\n<body class=\"tpl-" + t.Name + "\">\n<main>\n")
 	fmt.Fprintf(&b, "<h1>%s</h1>\n", html.EscapeString(title))
 	fmt.Fprintf(&b, "<p class=\"src\">%s</p>\n", html.EscapeString(source))

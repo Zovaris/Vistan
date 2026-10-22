@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -426,6 +427,102 @@ func TestBriefIsEmbedded(t *testing.T) {
 		if !strings.Contains(agentBrief, want) {
 			t.Fatalf("brief missing %q", want)
 		}
+	}
+}
+
+func TestStateDirHonoursCacheEnv(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("VISTAN_CACHE", dir)
+	if got := stateDir(); got != dir {
+		t.Fatalf("stateDir = %q, want %q", got, dir)
+	}
+}
+
+func TestKeepPagesPrunesOldest(t *testing.T) {
+	dir := t.TempDir()
+	now := time.Now()
+	for i := 0; i < 5; i++ {
+		name := fmt.Sprintf("page-%d.html", i)
+		path := filepath.Join(dir, name)
+		if err := os.WriteFile(path, []byte("x"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		stamp := now.Add(time.Duration(i-4) * time.Hour)
+		if err := os.Chtimes(path, stamp, stamp); err != nil {
+			t.Fatal(err)
+		}
+	}
+	os.WriteFile(filepath.Join(dir, "index.html"), []byte("index"), 0o644)
+
+	t.Setenv("VISTAN_KEEP", "3")
+	keepPages(dir)
+
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 4 {
+		t.Fatalf("files left = %d, want 4 (3 pages + index)", len(entries))
+	}
+	for _, name := range []string{"page-0.html", "page-1.html"} {
+		if _, err := os.Stat(filepath.Join(dir, name)); !os.IsNotExist(err) {
+			t.Fatalf("%s should have been pruned", name)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(dir, "index.html")); err != nil {
+		t.Fatalf("index.html was pruned")
+	}
+	if _, err := os.Stat(filepath.Join(dir, "page-4.html")); err != nil {
+		t.Fatalf("newest page was pruned")
+	}
+}
+
+func TestKeepPagesUnlimitedWhenZero(t *testing.T) {
+	dir := t.TempDir()
+	for i := 0; i < 3; i++ {
+		os.WriteFile(filepath.Join(dir, fmt.Sprintf("p%d.html", i)), []byte("x"), 0o644)
+	}
+	t.Setenv("VISTAN_KEEP", "0")
+	keepPages(dir)
+	entries, _ := os.ReadDir(dir)
+	if len(entries) != 3 {
+		t.Fatalf("files left = %d, want 3", len(entries))
+	}
+}
+
+func TestDayLabels(t *testing.T) {
+	now := time.Now()
+	if got := dayLabel(now); got != "Today" {
+		t.Fatalf("today label = %q", got)
+	}
+	if got := dayLabel(now.AddDate(0, 0, -1)); got != "Yesterday" {
+		t.Fatalf("yesterday label = %q", got)
+	}
+	old := now.AddDate(0, 0, -9)
+	if got := dayLabel(old); got == "Today" || got == "Yesterday" {
+		t.Fatalf("old label = %q", got)
+	}
+}
+
+func TestIndexGroupsByDayAndProject(t *testing.T) {
+	now := time.Now()
+	pages := []pageEntry{
+		{name: "plan.html", title: "A plan", tpl: "plan", project: "vistan", mod: now},
+		{name: "review.html", title: "A review", tpl: "review", project: "fizza", mod: now.AddDate(0, 0, -1)},
+	}
+	html := indexHTML(pages)
+	for _, want := range []string{"Today", "Yesterday", "vistan", "fizza", "2 projects", `href="review.html"`} {
+		if !strings.Contains(html, want) {
+			t.Fatalf("index missing %q", want)
+		}
+	}
+}
+
+func TestPageCarriesProjectMeta(t *testing.T) {
+	d := parse(t, planDoc)
+	html := renderHTML(d, tpl(t, "plan"), "x.md", "")
+	if !strings.Contains(html, `<meta name="vistan-project" content="`) {
+		t.Fatalf("project meta missing")
 	}
 }
 
