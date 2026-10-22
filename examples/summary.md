@@ -20,5 +20,5 @@ Seven templates, a treemap for `map`, and one command to find what you generated
 
 ## Pending
 
-- Push the five commits.
+- Push the commits once the review is done.
 - Write the Homebrew formula once there are release tarballs.
