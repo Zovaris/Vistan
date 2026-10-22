@@ -54,7 +54,7 @@ the file. That is the hook an agent can check before showing you anything.
 
 | Template | Sections | Use it for |
 |---|---|---|
-| `plan` | Decisions, Rejected, Verification, Your move | agreeing on work before doing it |
+| `plan` | Decisions, Rejected, Verification, Your move (plus optional Steps and Files) | agreeing on work before doing it |
 | `summary` | What changed, Verification, Pending | reporting work just finished |
 | `selection` | one section per option | asking you to pick, with a copyable answer |
 | `map` | Overview, Tree, Entry points, Largest files | orienting someone in a codebase |
@@ -137,6 +137,20 @@ A deliberate subset, not full Markdown:
 
 - One `# ` title, `## ` sections, paragraphs, and bullet lists indented two spaces per level.
 - `###` subheadings, rendered as small caps labels.
+- Task lists: `- [x] done` and `- [ ] todo` become checkboxes; a section header shows
+  `done/total` and the page gets a summary strip (`6/8 checks · 7 files · 1 risk`).
+- Callouts: a blockquote that starts with `> [!WARN] Title` renders as a labelled panel.
+  `note`, `tip`, `warn`, `risk`, `decision` and `question` have their own colour.
+- A fenced block tagged `changes` renders a file list instead of code:
+
+  ```
+  + new/file.go
+  ~ edited/file.go  what changed in it
+  - gone/file.go
+  > old.go -> new.go
+  ```
+
+  `+` add, `~` modify, `-` delete, `>` move; the note after two spaces is optional.
 - Fenced code blocks, shown in a bordered monospace box with horizontal scroll.
 - Inline `` `code` ``, `**bold**`, `[links](https://example.com)` and bold that contains
   code. Links are only rendered for `http`, `https`, `mailto`, `#` and relative paths.
@@ -152,6 +166,11 @@ Anything else stays literal text, which is why a broken document still renders.
 A paper document, not a dashboard: warm off-white, near-black ink, serif body at a
 38rem measure, one hairline rule per section, italic section headings with a muted
 count. Dark mode follows `prefers-color-scheme`. No web fonts, no shadows, no cards.
+
+The one exception is the plan's **Your move**: it is a bordered panel tagged
+`waiting on you`, because that is the part the reader has to act on. The summary strip
+at the top (`6/8 checks`, `7 files`, `1 risk`) is built from the document itself, so it
+is never out of date.
 
 ## Limits
 

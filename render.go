@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -48,7 +49,16 @@ var sectionColors = map[string]string{
 var (
 	bulletLine = regexp.MustCompile(`^[ \t]*[-*][ \t]`)
 	indentOnly = regexp.MustCompile(`^[ \t]*`)
+	taskLine   = regexp.MustCompile(`^[ \t]*[-*][ \t]+\[([ xX])\][ \t]+(.*)$`)
+	fenceOpen  = regexp.MustCompile("^[ \\t]*```[ \\t]*([^` \\t]*)")
+	calloutTag = regexp.MustCompile(`^\[!([A-Za-z]+)\][ \t]*(.*)$`)
+	riskTag    = regexp.MustCompile(`(?i)^[ \t]*>[ \t]*\[!(warn|risk)\]`)
 )
+
+var calloutLabels = map[string]string{
+	"note": "Note", "tip": "Tip", "warn": "Warning", "risk": "Risk",
+	"decision": "Decision", "question": "Open question", "done": "Done",
+}
 
 func renderTerminal(d *Doc, t Template, source string, color bool, w io.Writer) int {
 	paint := func(code string) string {
@@ -85,10 +95,12 @@ func renderTerminal(d *Doc, t Template, source string, color bool, w io.Writer) 
 		}
 
 		fmt.Fprintf(w, "\n  %s▌%s %s%s%s%s", color, paint(ansiReset), color, prefix, s.Name, paint(ansiReset))
-		items := 0
-		for _, line := range body {
-			if bulletLine.MatchString(line) {
-				items++
+		items := countChanges(body)
+		if items == 0 {
+			for _, line := range body {
+				if bulletLine.MatchString(line) {
+					items++
+				}
 			}
 		}
 		switch {
@@ -108,6 +120,28 @@ func renderTerminal(d *Doc, t Template, source string, color bool, w io.Writer) 
 				continue
 			case strings.HasPrefix(trimmed, "### "):
 				fmt.Fprintf(w, "    %s%s%s\n", paint(ansiDim), strings.TrimSpace(trimmed[4:]), paint(ansiReset))
+			case strings.HasPrefix(trimmed, ">"):
+				text := strings.TrimSpace(strings.TrimPrefix(trimmed, ">"))
+				if m := calloutTag.FindStringSubmatch(text); m != nil {
+					label := calloutLabels[strings.ToLower(m[1])]
+					if label == "" {
+						label = m[1]
+					}
+					fmt.Fprintf(w, "  %s! %s%s", paint(ansiWarn), strings.ToLower(label), paint(ansiReset))
+					if m[2] != "" {
+						fmt.Fprintf(w, " — %s", m[2])
+					}
+					fmt.Fprintln(w)
+					continue
+				}
+				fmt.Fprintf(w, "  %s%s%s\n", paint(ansiDim), text, paint(ansiReset))
+			case taskLine.MatchString(line):
+				m := taskLine.FindStringSubmatch(line)
+				box := "[ ]"
+				if m[1] != " " {
+					box = "[x]"
+				}
+				fmt.Fprintf(w, "  %s %s\n", box, m[2])
 			case imageLine.MatchString(line):
 				m := imageLine.FindStringSubmatch(line)
 				label := m[1]
@@ -202,6 +236,7 @@ func imageSrc(src, baseDir string) string {
 func renderBody(b *strings.Builder, lines []string, baseDir string) {
 	inList := false
 	inFence := false
+	fenceKind := ""
 
 	closeList := func() {
 		if inList {
@@ -210,24 +245,65 @@ func renderBody(b *strings.Builder, lines []string, baseDir string) {
 		}
 	}
 
-	for _, line := range lines {
+	for i := 0; i < len(lines); i++ {
+		line := lines[i]
+		trimmed := strings.TrimSpace(line)
+
 		switch {
-		case fenceLine.MatchString(line):
-			if inFence {
-				b.WriteString("</code></pre>\n")
+		case inFence:
+			if fenceLine.MatchString(line) {
+				if fenceKind == "changes" {
+					b.WriteString("</ul>\n")
+					inList = false
+				} else {
+					b.WriteString("</code></pre>\n")
+				}
 				inFence = false
+				fenceKind = ""
 				continue
 			}
-			closeList()
-			b.WriteString("<pre><code>\n")
-			inFence = true
-		case inFence:
+			if fenceKind == "changes" {
+				renderChange(b, line)
+				continue
+			}
 			b.WriteString(html.EscapeString(line))
 			b.WriteString("\n")
-		case strings.HasPrefix(strings.TrimSpace(line), "### "):
+		case fenceOpen.MatchString(line):
 			closeList()
-			label := strings.TrimSpace(strings.TrimSpace(line)[4:])
-			fmt.Fprintf(b, "<h3>%s</h3>\n", inline(label))
+			fenceKind = fenceOpen.FindStringSubmatch(line)[1]
+			inFence = true
+			if fenceKind == "changes" {
+				b.WriteString("<ul class=\"changes\">\n")
+				inList = true
+				continue
+			}
+			b.WriteString("<pre><code>\n")
+		case strings.HasPrefix(trimmed, ">"):
+			closeList()
+			var quote []string
+			for i < len(lines) && strings.HasPrefix(strings.TrimSpace(lines[i]), ">") {
+				quote = append(quote, strings.TrimPrefix(strings.TrimSpace(lines[i]), ">"))
+				i++
+			}
+			i--
+			renderCallout(b, quote)
+		case strings.HasPrefix(trimmed, "### "):
+			closeList()
+			fmt.Fprintf(b, "<h3>%s</h3>\n", inline(strings.TrimSpace(trimmed[4:])))
+		case taskLine.MatchString(line):
+			if !inList {
+				b.WriteString("<ul>\n")
+				inList = true
+			}
+			m := taskLine.FindStringSubmatch(line)
+			done := m[1] != " "
+			class, box := "task", "&#9744;"
+			if done {
+				class, box = "task done", "&#10003;"
+			}
+			level := len(indentOnly.FindString(line)) / 2
+			fmt.Fprintf(b, "<li class=\"%s\" style=\"--l:%d\"><span class=\"box\">%s</span><span class=\"txt\">%s</span></li>\n",
+				class, level, box, inline(m[2]))
 		case bulletLine.MatchString(line):
 			if !inList {
 				b.WriteString("<ul>\n")
@@ -244,7 +320,7 @@ func renderBody(b *strings.Builder, lines []string, baseDir string) {
 				fmt.Fprintf(b, "<figcaption>%s</figcaption>", html.EscapeString(m[1]))
 			}
 			b.WriteString("</figure>\n")
-		case strings.TrimSpace(line) == "":
+		case trimmed == "":
 			closeList()
 		default:
 			closeList()
@@ -252,9 +328,157 @@ func renderBody(b *strings.Builder, lines []string, baseDir string) {
 		}
 	}
 	if inFence {
-		b.WriteString("</code></pre>\n")
+		if fenceKind == "changes" {
+			b.WriteString("</ul>\n")
+		} else {
+			b.WriteString("</code></pre>\n")
+		}
 	}
 	closeList()
+}
+
+func renderChange(b *strings.Builder, line string) {
+	trimmed := strings.TrimSpace(line)
+	if trimmed == "" {
+		return
+	}
+
+	var kind, letter string
+	switch trimmed[0] {
+	case '+':
+		kind, letter = "add", "A"
+	case '~':
+		kind, letter = "mod", "M"
+	case '-':
+		kind, letter = "del", "D"
+	case '>':
+		kind, letter = "move", "R"
+	default:
+		fmt.Fprintf(b, "<li><code>%s</code></li>\n", html.EscapeString(trimmed))
+		return
+	}
+
+	path, note := strings.TrimSpace(trimmed[1:]), ""
+	if i := strings.Index(path, "  "); i > 0 {
+		path, note = strings.TrimSpace(path[:i]), strings.TrimSpace(path[i:])
+	}
+
+	fmt.Fprintf(b, `<li class="%s"><span class="mark">%s</span><code>%s</code>`, kind, letter, html.EscapeString(path))
+	if note != "" {
+		fmt.Fprintf(b, `<span class="note">— %s</span>`, inline(note))
+	}
+	b.WriteString("</li>\n")
+}
+
+func renderCallout(b *strings.Builder, lines []string) {
+	kind, title := "note", ""
+	if len(lines) > 0 {
+		if m := calloutTag.FindStringSubmatch(strings.TrimSpace(lines[0])); m != nil {
+			kind = strings.ToLower(m[1])
+			title = strings.TrimSpace(m[2])
+			lines = lines[1:]
+		}
+	}
+	label := calloutLabels[kind]
+	if label == "" {
+		label = strings.ToUpper(kind[:1]) + kind[1:]
+	}
+
+	fmt.Fprintf(b, `<aside class="callout %s"><p class="kind">%s</p>`, kind, html.EscapeString(label))
+	if title != "" {
+		fmt.Fprintf(b, `<p class="lead">%s</p>`, inline(title))
+	}
+
+	var para []string
+	inList := false
+	flush := func() {
+		if len(para) > 0 {
+			fmt.Fprintf(b, "<p>%s</p>\n", inline(strings.Join(para, " ")))
+			para = nil
+		}
+	}
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		switch {
+		case trimmed == "":
+			flush()
+			if inList {
+				b.WriteString("</ul>\n")
+				inList = false
+			}
+		case bulletLine.MatchString(line):
+			flush()
+			if !inList {
+				b.WriteString("<ul>\n")
+				inList = true
+			}
+			fmt.Fprintf(b, "<li>%s</li>\n", inline(strings.TrimSpace(bulletLine.ReplaceAllString(line, ""))))
+		default:
+			para = append(para, trimmed)
+		}
+	}
+	flush()
+	if inList {
+		b.WriteString("</ul>\n")
+	}
+	b.WriteString("</aside>\n")
+}
+
+func countChanges(lines []string) int {
+	count, in := 0, false
+	for _, line := range lines {
+		if fenceLine.MatchString(line) {
+			in = !in && strings.TrimSpace(fenceOpen.FindStringSubmatch(line)[1]) == "changes"
+			continue
+		}
+		if in && strings.TrimSpace(line) != "" {
+			count++
+		}
+	}
+	return count
+}
+
+func statStrip(d *Doc) string {
+	tasks, done, files, risks := 0, 0, 0, 0
+	for _, s := range d.Sections {
+		for _, line := range s.Body {
+			if m := taskLine.FindStringSubmatch(line); m != nil {
+				tasks++
+				if m[1] != " " {
+					done++
+				}
+			}
+			if riskTag.MatchString(line) {
+				risks++
+			}
+		}
+		files += countChanges(s.Body)
+	}
+
+	var parts []string
+	if tasks > 0 {
+		parts = append(parts, fmt.Sprintf("<span><b>%d/%d</b> checks</span>", done, tasks))
+	}
+	if files > 0 {
+		parts = append(parts, fmt.Sprintf("<span><b>%d</b> file%s</span>", files, pluralSuffix(files)))
+	}
+	if risks > 0 {
+		parts = append(parts, fmt.Sprintf("<span><b>%d</b> risk%s</span>", risks, pluralSuffix(risks)))
+	}
+	if move := d.find("Your move"); move != nil && len(move.BodyTrimmed()) > 0 {
+		parts = append(parts, `<span class="wait">waiting on you</span>`)
+	}
+	if len(parts) == 0 {
+		return ""
+	}
+	return `<p class="stats">` + strings.Join(parts, "") + "</p>\n"
+}
+
+func pluralSuffix(n int) string {
+	if n == 1 {
+		return ""
+	}
+	return "s"
 }
 
 func statusClass(body []string) string {
@@ -327,6 +551,8 @@ func renderHTML(d *Doc, t Template, source, baseDir string) string {
 	selection := t.Name == "selection"
 	if selection {
 		b.WriteString("<fieldset class=\"opts\">\n<legend class=\"sr-only\">Pick one</legend>\n")
+	} else {
+		b.WriteString(statStrip(d))
 	}
 
 	for i, s := range d.Sections {
@@ -345,26 +571,46 @@ func renderHTML(d *Doc, t Template, source, baseDir string) string {
 			continue
 		}
 
-		items := 0
+		items, tasks, done := 0, 0, 0
 		for _, line := range body {
+			if m := taskLine.FindStringSubmatch(line); m != nil {
+				tasks++
+				if m[1] != " " {
+					done++
+				}
+				continue
+			}
 			if bulletLine.MatchString(line) {
 				items++
 			}
 		}
+		changes := countChanges(body)
+
 		class := ""
-		switch t.Name {
-		case "adr":
-			if i == 0 {
-				class = ` class="status ` + statusClass(body) + `"`
-			} else {
-				class = ` class="record"`
-			}
-		case "changelog":
+		switch {
+		case t.Name == "adr" && i == 0:
+			class = ` class="status ` + statusClass(body) + `"`
+		case t.Name == "adr":
+			class = ` class="record"`
+		case t.Name == "changelog":
 			class = ` class="release` + unreleasedClass(s.Name) + `"`
+		case t.Name == "plan" && s.Name == "Your move":
+			class = ` class="move"`
 		}
 		fmt.Fprintf(&b, "<section%s>\n", class)
-		if items > 0 && t.Name != "changelog" {
-			fmt.Fprintf(&b, "<h2>%s <span>%d</span></h2>\n", inline(s.Name), items)
+
+		label := ""
+		switch {
+		case t.Name == "changelog", t.Name == "plan" && s.Name == "Your move":
+		case tasks > 0:
+			label = fmt.Sprintf("%d/%d", done, tasks)
+		case changes > 0:
+			label = strconv.Itoa(changes)
+		case items > 0:
+			label = strconv.Itoa(items)
+		}
+		if label != "" {
+			fmt.Fprintf(&b, "<h2>%s <span>%s</span></h2>\n", inline(s.Name), label)
 		} else {
 			fmt.Fprintf(&b, "<h2>%s</h2>\n", inline(s.Name))
 		}
@@ -425,6 +671,54 @@ pre { margin: 14px 0; padding: 14px 16px; overflow-x: auto; background: #efe9da;
   border: 1px solid var(--rule); border-radius: 3px; }
 pre code { background: none; padding: 0; font-size: 0.8rem; line-height: 1.5; }
 .empty { margin: 0; color: var(--muted); font-style: italic; }
+
+.stats { display: flex; flex-wrap: wrap; gap: 1.3em; margin: 26px 0 0;
+  font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
+  font-size: 0.73rem; letter-spacing: 0.02em; color: var(--muted); }
+.stats b { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+.stats .wait { color: var(--ink); border-bottom: 1px solid var(--rule); padding-bottom: 1px; }
+
+li.task { list-style: none; position: relative; padding-left: 1.5em;
+  margin-left: calc(var(--l, 0) * 1.2em - 1.15em); }
+li.task .box { position: absolute; left: 0; top: 0.28em; width: 1.02em; height: 1.02em;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--rule); border-radius: 3px; font-size: 0.66em;
+  color: transparent; font-family: ui-sans-serif, sans-serif; }
+li.task.done .box { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+li.task.done .txt { color: var(--muted); text-decoration: line-through;
+  text-decoration-color: var(--rule); }
+
+ul.changes { list-style: none; margin: 12px 0; padding: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; }
+ul.changes li { display: flex; align-items: baseline; gap: 0.6em; margin: 0 0 5px;
+  margin-left: 0; }
+ul.changes .mark { flex: none; width: 1.15em; text-align: center; font-size: 0.68rem;
+  font-weight: 600; color: var(--muted); }
+ul.changes .add .mark { color: #3f7a4d; }
+ul.changes .del .mark { color: #a1503f; }
+ul.changes .move .mark { color: #5d6f8c; }
+ul.changes code { background: none; padding: 0; white-space: pre-wrap; word-break: break-word; }
+ul.changes .note { color: var(--muted); font-family: inherit; font-size: 0.78rem; }
+
+aside.callout { margin: 18px 0; padding: 12px 16px 14px; border-left: 2px solid var(--rule);
+  background: #efe9da; border-radius: 0 3px 3px 0; }
+aside.callout .kind { margin: 0 0 5px; font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
+  font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+aside.callout .lead { margin: 0 0 4px; font-weight: 600; }
+aside.callout p { margin: 6px 0; }
+aside.callout p:last-child, aside.callout ul:last-child { margin-bottom: 0; }
+aside.callout ul { margin: 4px 0 0; }
+aside.callout.tip { background: #e9f0e4; border-left-color: #8ca57e; }
+aside.callout.warn, aside.callout.risk { background: #f6e9dd; border-left-color: #c08a5e; }
+aside.callout.decision { background: #e8ecf3; border-left-color: #8496b4; }
+aside.callout.question { background: #f3eef7; border-left-color: #a58ab8; }
+
+.tpl-plan section.move { margin-top: 42px; padding: 20px 24px 22px; border: 1px solid var(--rule);
+  border-radius: 4px; background: var(--field); }
+.tpl-plan section.move h2::after { content: "waiting on you"; font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
+  font-size: 0.62rem; font-style: normal; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--muted); }
+
 footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--rule);
   font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
   font-size: 0.75rem; letter-spacing: 0.02em; color: var(--muted); }
@@ -505,6 +799,14 @@ figcaption { margin-top: 6px; color: var(--muted); font-size: 0.75rem;
   :root { --paper: #13120e; --ink: #e7e1d3; --muted: #a49c88; --rule: #2a2720; --field: #1a1813; }
   .art .tm-d0 rect { fill-opacity: 0.5; }
   .art .tm-d1 rect { fill-opacity: 0.3; }
+  aside.callout { background: #1c1a14; }
+  aside.callout.tip { background: #171e16; }
+  aside.callout.warn, aside.callout.risk { background: #221a14; }
+  aside.callout.decision { background: #171b22; }
+  aside.callout.question { background: #1d1822; }
+  ul.changes .add .mark { color: #8fbd95; }
+  ul.changes .del .mark { color: #d29a88; }
+  ul.changes .move .mark { color: #9aaecb; }
   .tpl-adr section.status.is-accepted p { color: #a8c8a8; border-color: #33452f; background: #1b241a; }
   .tpl-adr section.status.is-rejected p { color: #d8a295; border-color: #4a302a; background: #261a17; }
   .tpl-adr section.status.is-proposed p { color: #d6bd8a; border-color: #453a24; background: #221f16; }

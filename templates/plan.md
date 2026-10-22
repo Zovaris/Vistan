@@ -1,19 +1,35 @@
 <!-- vistan: plan -->
 
-# Title
+# Plan title
+
+One line: what this plan settles.
 
 ## Decisions
 
-- What you chose, one line each.
+- What we will do, one per line.
 
 ## Rejected
 
-- What you dropped and why. This is the section that stops the plan from being relitigated.
+- What we are not doing, and the reason.
+
+## Steps
+
+- [x] The step that is already done.
+- [ ] The step that comes next.
+
+## Files
+
+```changes
++ new/file.go
+~ existing/file.go  what changes in it
+- gone/file.go
+```
 
 ## Verification
 
-- What you actually ran and what it printed.
+- [x] `go test ./...` is green.
+- [ ] The check that still has to run.
 
 ## Your move
 
-- What is left for the human to decide or do. If nothing is left, say so.
+- The decision only you can make.

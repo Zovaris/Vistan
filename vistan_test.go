@@ -90,7 +90,7 @@ func TestMissing(t *testing.T) {
 
 func TestHTMLPlanHasSectionsAndFooter(t *testing.T) {
 	html := renderHTML(parse(t, planDoc), tpl(t, "plan"), "examples/plan.md", "")
-	if got := strings.Count(html, "<section>"); got != 4 {
+	if got := strings.Count(html, "<section"); got != 4 {
 		t.Fatalf("sections = %d, want 4", got)
 	}
 	if !strings.Contains(html, "<footer>Plan complete</footer>") {
@@ -297,6 +297,84 @@ func TestIndexListsPagesWithLinks(t *testing.T) {
 	for _, want := range []string{`href="plan.html"`, `href="adr.html"`, ">plan<", ">adr<"} {
 		if !strings.Contains(html, want) {
 			t.Fatalf("index missing %q", want)
+		}
+	}
+}
+
+func TestTasksRenderWithProgress(t *testing.T) {
+	d := parse(t, "# P\n\n## Steps\n\n- [x] one\n- [x] two\n- [ ] three\n")
+	html := renderHTML(d, tpl(t, "plan"), "x.md", "")
+	if !strings.Contains(html, `<h2>Steps <span>2/3</span></h2>`) {
+		t.Fatalf("task progress missing: %s", html)
+	}
+	if got := strings.Count(html, `class="task done"`); got != 2 {
+		t.Fatalf("done tasks = %d, want 2", got)
+	}
+	if !strings.Contains(html, `<span class="box">&#9744;</span>`) {
+		t.Fatalf("open task box missing")
+	}
+}
+
+func TestCallout(t *testing.T) {
+	d := parse(t, "# P\n\n## Context\n\n> [!WARN] Careful now\n> It is one line\n> continued here.\n>\n> - and a bullet\n")
+	html := renderHTML(d, tpl(t, "plan"), "x.md", "")
+	if !strings.Contains(html, `<aside class="callout warn">`) {
+		t.Fatalf("callout missing: %s", html)
+	}
+	if !strings.Contains(html, `<p class="kind">Warning</p>`) {
+		t.Fatalf("callout label missing")
+	}
+	if !strings.Contains(html, "<p>It is one line continued here.</p>") {
+		t.Fatalf("callout paragraph not joined")
+	}
+	if !strings.Contains(html, "<li>and a bullet</li>") {
+		t.Fatalf("callout list missing")
+	}
+}
+
+func TestChangesBlock(t *testing.T) {
+	d := parse(t, "# P\n\n## Files\n\n```changes\n+ a.go\n~ b.go  why it changed\n- c.go\n> old.go -> new.go\n```\n")
+	html := renderHTML(d, tpl(t, "plan"), "x.md", "")
+	for _, want := range []string{
+		`<ul class="changes">`,
+		`class="add"><span class="mark">A</span><code>a.go</code>`,
+		`class="mod"><span class="mark">M</span><code>b.go</code>`,
+		`class="note">— why it changed</span>`,
+		`class="del"><span class="mark">D</span><code>c.go</code>`,
+		`class="move"><span class="mark">R</span><code>old.go -&gt; new.go</code>`,
+	} {
+		if !strings.Contains(html, want) {
+			t.Fatalf("changes block missing %q", want)
+		}
+	}
+}
+
+func TestStatsStrip(t *testing.T) {
+	d := parse(t, "# P\n\n## Steps\n\n- [x] one\n- [ ] two\n\n## Files\n\n```changes\n+ a.go\n```\n\n## Risk\n\n> [!RISK] no auth\n> loopback only\n\n## Your move\n\n- decide\n")
+	html := renderHTML(d, tpl(t, "plan"), "x.md", "")
+	for _, want := range []string{"<b>1/2</b> checks", "<b>1</b> file", "<b>1</b> risk", `class="wait"`} {
+		if !strings.Contains(html, want) {
+			t.Fatalf("stats missing %q in %s", want, html)
+		}
+	}
+}
+
+func TestYourMoveIsAPanel(t *testing.T) {
+	d := parse(t, planDoc)
+	html := renderHTML(d, tpl(t, "plan"), "x.md", "")
+	if !strings.Contains(html, `<section class="move">`) {
+		t.Fatalf("move panel missing")
+	}
+}
+
+func TestTerminalTasksAndCallouts(t *testing.T) {
+	d := parse(t, "# P\n\n## Steps\n\n- [x] one\n- [ ] two\n\n## Risk\n\n> [!WARN] no auth\n> loopback only\n")
+	var b strings.Builder
+	renderTerminal(d, tpl(t, "plan"), "x", false, &b)
+	out := b.String()
+	for _, want := range []string{"[x] one", "[ ] two", "! warning — no auth", "loopback only"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("terminal missing %q in %s", want, out)
 		}
 	}
 }
