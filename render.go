@@ -412,6 +412,13 @@ figcaption { margin-top: 6px; color: var(--muted); font-size: 0.75rem;
 .tpl-diagram main { width: min(46rem, calc(100vw - 2.5rem)); }
 .tpl-diagram pre { font-size: 0.92rem; padding: 22px 24px; }
 
+.tpl-adr section:first-of-type { border-top: 0; margin-top: 14px; padding-top: 0; }
+.tpl-adr section:first-of-type h2 { display: none; }
+.tpl-adr section:first-of-type p { display: inline-block; margin: 0; padding: 2px 11px;
+  border: 1px solid var(--rule); border-radius: 999px; font-size: 0.78rem; color: var(--muted);
+  font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif; }
+.tpl-adr section:first-of-type strong { font-weight: 500; }
+
 @media (max-width: 560px) { main { padding: 48px 0 64px; } h1 { font-size: 1.7rem; } }
 @media (prefers-color-scheme: dark) {
   :root { --paper: #13120e; --ink: #e7e1d3; --muted: #a49c88; --rule: #2a2720; --field: #1a1813; }
