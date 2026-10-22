@@ -102,6 +102,8 @@ vistan rerender --all         # rebuild every page that has a source
 
 - [INSTRUCTIONS.md](INSTRUCTIONS.md): every command, template, the renderer subset and
   the repository layout.
+- [AGENTS.md](AGENTS.md): the same thing for the next agent, plus a block to drop into
+  another repository's instructions.
 - `vistan brief`: the same rules, written for the agent that generates the pages.
 
 ## Development
