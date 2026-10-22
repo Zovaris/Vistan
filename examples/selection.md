@@ -23,12 +23,6 @@ Pages sit next to the code and can be committed or ignored.
 
 ![Pages inside the project](assets/location-project.svg)
 
-```
-project/
-├── .vistan/plan.html
-└── src/
-```
-
 - Reopen and compare across branches.
 - You have to decide git or `.gitignore`, and it clutters the tree.
 
@@ -37,11 +31,6 @@ project/
 Everything lives outside the project, with an index of past pages.
 
 ![Pages in a home folder with an index](assets/location-home.svg)
-
-```
-~/.vistan/index.html     ← every page, newest first
-~/.vistan/plan.html
-```
 
 - Survives a temp cleanup and works from any project.
 - One more folder to maintain, and deletion is manual.
