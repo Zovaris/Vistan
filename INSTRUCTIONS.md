@@ -34,6 +34,7 @@ go build -o vistan .
 vistan <file.md>                 # print in the terminal
 vistan serve <file.md>           # build the page, start the server, open it
 vistan map [path] [--depth N]    # scan a directory and serve its map
+vistan index                     # list every generated page and serve it
 vistan stop                      # stop the server
 vistan new <template>            # print a template to stdout
 vistan templates                 # list templates
@@ -88,6 +89,12 @@ For a decision:
 2. Write the question as the title and one section per option.
 3. `vistan serve choice.md`
 4. The human picks a radio, copies `B: <option>`, pastes it back.
+
+## The index
+
+`vistan index` writes `index.html` into the cache with every generated page, newest
+first, and serves it at the root URL. It is how you get back to a page you generated
+an hour ago without remembering its name.
 
 ## The map command
 

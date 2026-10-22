@@ -19,6 +19,7 @@ func usage(w io.Writer) {
 
   serve        build the page, start a local server and open it
   map [path]   scan a directory and render it as a map (default: .)
+  index        list the generated pages and serve them
   stop         stop the local server
   new          print a template to stdout
   templates    list the templates
@@ -37,7 +38,7 @@ func run(args []string) int {
 	command := "show"
 	if len(args) > 0 {
 		switch args[0] {
-		case "serve", "stop", "new", "templates", "map", "serve-child":
+		case "serve", "stop", "new", "templates", "map", "index", "serve-child":
 			command = args[0]
 			args = args[1:]
 		case "-h", "--help", "help":
@@ -70,6 +71,8 @@ func run(args []string) int {
 		}
 		fmt.Print(text)
 		return 0
+	case "index":
+		return runIndex()
 	case "map":
 		return runMap(args)
 	case "serve-child":
