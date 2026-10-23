@@ -406,7 +406,7 @@ func runMap(args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
 	}
-	return serveDoc(doc, tpl, path, pageName(filepath.Base(abs)), "", nil)
+	return serveDoc(doc, tpl, abs, pageName(filepath.Base(abs)), "", nil)
 }
 
 func pageName(s string) string {

@@ -17,7 +17,7 @@ body { margin: 0; background: var(--paper); color: var(--ink);
 main { width: min(38rem, calc(100vw - 2.5rem)); margin: 0 auto; padding: 80px 0 96px; }
 h1 { margin: 0 0 8px; font-size: 2.05rem; line-height: 1.16; font-weight: 400;
   letter-spacing: -0.015em; text-wrap: balance; }
-.src { margin: 0; color: var(--muted);
+.src { margin: 0; color: var(--muted); overflow-wrap: anywhere;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.72rem; }
 section { margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--rule); }
 h2 { display: flex; align-items: baseline; justify-content: space-between; gap: 1em;
@@ -117,7 +117,7 @@ footer { margin-top: 40px; padding-top: 16px; border-top: 1px solid var(--rule);
   font-size: 0.75rem; letter-spacing: 0.02em; color: var(--muted); }
 footer .warn { color: #8a4b1f; }
 
-fieldset.opts { border: 0; padding: 0; margin: 36px 0 0; }
+fieldset.opts { border: 0; padding: 0; margin: 36px 0 0; min-width: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .opt .pick { display: flex; align-items: center; gap: 0.8rem; cursor: pointer; }

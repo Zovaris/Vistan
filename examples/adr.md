@@ -29,7 +29,7 @@ cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 
 ## Consequences
 
-- Pages get a real origin, so copy-to-clipboard and relative links behave.
+- Pages get a real origin, so relative links work and the page can post a choice back to the server.
 - One more process to track; the pid file is the only handle on it.
 - The server binds to loopback with no auth, so it is not shareable and not safe to expose.
 - `vistan stop` is required after a rename, because the directory is the only thing the server knows.

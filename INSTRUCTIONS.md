@@ -348,8 +348,9 @@ is never out of date.
 
 ## Limits
 
-- Pages are static. The selection page cannot notify the agent; the answer travels by
-  clipboard.
+- Pages are static. A selection or review page posts the choice to the local server,
+  but nothing pushes it to the agent: it reads it with `vistan answer`, and only when
+  it asks.
 - The server is a plain directory server with no auth. It binds to loopback only.
 - The page is generated once; it does not reload when the Markdown changes.
 - Selection mode turns every `##` heading into an option, so a stray section becomes
