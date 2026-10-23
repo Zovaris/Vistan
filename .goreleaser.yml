@@ -48,5 +48,6 @@ release:
   name_template: "Vistan {{ .Version }}"
   prerelease: auto
   footer: |
-    Install with `go install github.com/zovaris/vistan/cmd/vistan@{{ .Tag }}`,
-    or unpack the archive for your platform and move `vistan` into your PATH.
+    Install with `curl -fsSL https://raw.githubusercontent.com/zovaris/vistan/main/install.sh | sh`,
+    or `go install github.com/zovaris/vistan/cmd/vistan@{{ .Tag }}`, or unpack the archive for
+    your platform and move `vistan` into your PATH.

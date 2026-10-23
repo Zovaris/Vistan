@@ -23,7 +23,24 @@ reading the page.
 
 ## Install
 
-Install the latest release with Go:
+One command, with no Go and no Homebrew in the way:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/zovaris/vistan/main/install.sh | sh
+```
+
+It reads the latest tag, downloads the archive for your platform, checks it against the
+release's `checksums.txt` and puts `vistan` in `/usr/local/bin`, or in `~/.local/bin` when
+that one is not writable. `| sh -s -- v0.1.0` installs a specific release, and
+`VISTAN_BIN_DIR` chooses another directory.
+
+On macOS, with Homebrew:
+
+```bash
+brew install sthbryan/tap/vistan
+```
+
+With Go:
 
 ```bash
 go install github.com/zovaris/vistan/cmd/vistan@latest
