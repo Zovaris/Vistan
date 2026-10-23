@@ -1,4 +1,12 @@
-# lefthook install links these into .git/hooks. The same four checks run in CI.
+# lefthook install links these into .git/hooks: gofmt on commit, the four checks on
+# push. CI runs the same four.
+
+pre-commit:
+  jobs:
+    - name: gofmt
+      glob: "*.go"
+      run: gofmt -w {staged_files}
+      stage_fixed: true
 
 pre-push:
   parallel: true

@@ -164,5 +164,6 @@ golangci-lint run ./...
 ```
 
 CI runs `golangci-lint` and, on Go 1.22 and the current release, the formatter, `vet`
-and the tests. The same four checks run before a push: `lefthook install` links them
-into `.git/hooks` once (`brew install lefthook` if you do not have it).
+and the tests. `lefthook install` links the same four checks into `.git/hooks` once
+(`brew install lefthook` if you do not have it): a commit formats the Go files it
+touches and stages the result, and a push runs everything.
