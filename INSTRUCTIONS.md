@@ -18,29 +18,8 @@ orchestrator can hand all the page work to a cheap sub-agent.
 
 ## Install
 
-From a checkout, which is the path that works today:
-
-```sh
-git clone https://github.com/sthbryan/vistan.git
-cd vistan
-go install ./cmd/vistan     # into $GOBIN
-```
-
-Or build the binary in place:
-
-```sh
-go build -o vistan ./cmd/vistan
-```
-
-The repository is private for now, so the module path only resolves with access and
-Go's git credentials:
-
-```sh
-GOPRIVATE=github.com/sthbryan go install github.com/sthbryan/vistan/cmd/vistan@latest
-```
-
-`brew install sthbryan/tap/vistan` works once a release exists; the formula expects
-`vistan_x.y.z_darwin_arm64.tar.gz` and `..._darwin_amd64.tar.gz`.
+The clone, the `go install`, the private-module flag and the Homebrew formula live in
+[README.md](README.md#install). From a checkout it is `go install ./cmd/vistan`.
 
 ## Commands
 
@@ -390,11 +369,6 @@ one package. Splitting by layer would only add exported names and imports.
 
 ## Development
 
-```sh
-go test ./...     # parser, renderers, escaping, templates
-go vet ./...
-gofmt -l .
-```
-
-`vistan serve-child` is internal: it is the foreground process that `serve` spawns,
-and it only serves the cache directory it is given.
+`go test ./...`, `go vet ./...` and `gofmt -l .`; [README.md](README.md#development)
+lists the same three. `vistan serve-child` is internal: it is the foreground process
+that `serve` spawns, and it only serves the cache directory it is given.

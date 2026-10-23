@@ -30,7 +30,8 @@ GOPRIVATE=github.com/sthbryan go install github.com/sthbryan/vistan/cmd/vistan@l
 ```
 
 Once it is public, that becomes plain `go install github.com/sthbryan/vistan/cmd/vistan@latest`.
-`brew install sthbryan/tap/vistan` works once a release exists.
+`brew install sthbryan/tap/vistan` works once a release exists; the formula expects
+`vistan_x.y.z_darwin_arm64.tar.gz` and `..._darwin_amd64.tar.gz`.
 
 ## Use
 
