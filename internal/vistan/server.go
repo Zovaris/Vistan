@@ -24,7 +24,7 @@ func readPidFile(cache string) (int, int, bool) {
 		return 0, 0, false
 	}
 	fields := strings.Fields(string(b))
-	if len(fields) != 2 {
+	if len(fields) < 2 {
 		return 0, 0, false
 	}
 	pid, err1 := strconv.Atoi(fields[0])
@@ -50,7 +50,15 @@ func portFree(port int) bool {
 
 func startServer(cache string, port int) (int, error) {
 	if pid, known, ok := readPidFile(cache); ok && alive(pid) {
-		return known, nil
+		if runningVersion(cache) == version {
+			return known, nil
+		}
+		// A server from an older build cannot answer /_answer or serve the new page. It
+		// outlives an upgrade, so replace it instead of trusting the live pid.
+		syscall.Kill(pid, syscall.SIGTERM)
+		for i := 0; i < 50 && alive(pid); i++ {
+			time.Sleep(20 * time.Millisecond)
+		}
 	}
 	os.Remove(pidPath(cache))
 
@@ -68,7 +76,7 @@ func startServer(cache string, port int) (int, error) {
 		return 0, err
 	}
 
-	if err := os.WriteFile(pidPath(cache), []byte(fmt.Sprintf("%d %d\n", cmd.Process.Pid, port)), 0o644); err != nil {
+	if err := os.WriteFile(pidPath(cache), []byte(fmt.Sprintf("%d %d %s\n", cmd.Process.Pid, port, version)), 0o644); err != nil {
 		return 0, err
 	}
 
@@ -84,6 +92,18 @@ func startServer(cache string, port int) (int, error) {
 		time.Sleep(40 * time.Millisecond)
 	}
 	return port, nil
+}
+
+func runningVersion(cache string) string {
+	b, err := os.ReadFile(pidPath(cache))
+	if err != nil {
+		return ""
+	}
+	fields := strings.Fields(string(b))
+	if len(fields) < 3 {
+		return ""
+	}
+	return fields[2]
 }
 
 func serveBase(dir string) string {

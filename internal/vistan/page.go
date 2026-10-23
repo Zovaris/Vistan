@@ -122,10 +122,10 @@ func renderFinding(b *strings.Builder, id, severity, location string, body []str
 }
 
 const reviewDecision = `<section class="decision">
-<div class="dhead"><p class="hint" id="hint">Tick the findings you want applied, then send the decision.</p></div>
+<p class="hint" id="hint">Tick the findings you want applied.</p>
 <div class="answer">
-<input id="ans" readonly value="Reject all findings" aria-label="Decision to send">
-<button type="button" id="send">Send</button>
+<p class="choice" id="ans" aria-live="polite">Reject all findings</p>
+<button type="button" id="send">Send decision</button>
 </div>
 <script>
 const boxes = Array.from(document.querySelectorAll('input.pick'));
@@ -134,7 +134,7 @@ const send = document.getElementById('send');
 const hint = document.getElementById('hint');
 function sync() {
   const picked = boxes.filter(b => b.checked).map(b => b.value);
-  ans.value = picked.length ? 'Apply ' + picked.join(', ') : 'Reject all findings';
+  ans.textContent = picked.length ? 'Apply ' + picked.join(', ') : 'Reject all findings';
 }
 boxes.forEach(b => b.addEventListener('change', sync));
 document.querySelectorAll('section.finding').forEach(card => {
@@ -146,7 +146,7 @@ document.querySelectorAll('section.finding').forEach(card => {
     box.dispatchEvent(new Event('change', { bubbles: true }));
   });
 });
-send.addEventListener('click', () => sendAnswer(ans.value, send, hint));
+send.addEventListener('click', () => sendAnswer(ans.textContent, send, hint));
 </script>
 </section>
 `
@@ -165,7 +165,7 @@ async function sendAnswer(value, button, hint) {
       body: JSON.stringify({ answer: value }),
     });
     if (!res.ok) throw new Error(res.status);
-    button.textContent = 'Sent';
+    button.closest('.answer').classList.add('sent');
     hint.textContent = 'Sent. The agent reads it when you go back to the chat.';
   } catch (e) {
     button.disabled = false;
@@ -193,18 +193,18 @@ func unreleasedClass(name string) string {
 }
 
 const selectionScript = `<div class="answer">
-<input id="ans" readonly placeholder="Pick an option" aria-label="Answer to send">
-<button type="button" id="send" disabled>Send</button>
+<p class="choice none" id="ans" aria-live="polite">No option picked yet</p>
+<button type="button" id="send" disabled>Send choice</button>
 </div>
-<p class="hint" id="hint">Pick an option, then send it to the agent.</p>
+<p class="hint" id="hint">Pick an option above.</p>
 <script>
 const ans = document.getElementById('ans');
 const send = document.getElementById('send');
 const hint = document.getElementById('hint');
 function pick(r) {
-  ans.value = r.value;
+  ans.textContent = r.value;
+  ans.classList.remove('none');
   send.disabled = false;
-  hint.textContent = 'Ready: ' + r.value;
 }
 for (const r of document.querySelectorAll('input[name=opt]')) {
   r.addEventListener('change', () => pick(r));
@@ -219,7 +219,7 @@ document.querySelectorAll('section.opt').forEach(card => {
     radio.dispatchEvent(new Event('change', { bubbles: true }));
   });
 });
-send.addEventListener('click', () => sendAnswer(ans.value, send, hint));
+send.addEventListener('click', () => sendAnswer(ans.textContent, send, hint));
 </script>
 `
 

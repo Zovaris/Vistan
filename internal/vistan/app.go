@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-const version = "0.1.0"
+const version = "0.2.0"
 
 func usage(w io.Writer) {
 	fmt.Fprintf(w, `usage: vistan <file.md> | serve <file.md> | stop | new <template> | templates

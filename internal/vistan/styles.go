@@ -131,12 +131,20 @@ fieldset.opts { border: 0; padding: 0; margin: 36px 0 0; }
 .opt .desc > :first-child { margin-top: 0; }
 .opt .desc > :last-child { margin-bottom: 0; }
 .opt:has(input:checked) { border-top-color: var(--ink); }
-.answer { display: flex; gap: 10px; margin-top: 30px; align-items: stretch; }
-.answer input { flex: 1; min-width: 0; font: inherit; font-size: 0.9rem; padding: 8px 11px;
-  border: 1px solid var(--rule); border-radius: 3px; background: var(--field); color: var(--ink); }
-.answer button { font: inherit; font-size: 0.85rem; padding: 8px 15px; cursor: pointer;
-  border: 1px solid var(--ink); border-radius: 3px; background: var(--ink); color: var(--paper); }
-.answer button:disabled { opacity: 0.35; cursor: default; }
+.answer { display: flex; gap: 18px; margin-top: 24px; padding-top: 18px; align-items: center;
+  justify-content: space-between; flex-wrap: wrap; border-top: 1px solid var(--rule); }
+.answer .choice { margin: 0; font-size: 0.95rem; color: var(--ink); }
+.answer .choice.none { color: var(--muted); font-style: italic; }
+.answer button { font: inherit; font-size: 0.86rem; font-weight: 500; letter-spacing: 0.02em;
+  padding: 10px 24px; cursor: pointer; border: 1px solid var(--ink); border-radius: 4px;
+  background: var(--ink); color: var(--paper); transition: opacity 120ms ease; }
+.answer button:hover:not(:disabled) { opacity: 0.82; }
+.answer button:disabled { opacity: 0.28; cursor: default; }
+.answer button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.answer.sent { border-top-color: transparent; }
+.answer.sent button { display: none; }
+.answer.sent .choice { color: var(--muted); }
+.answer.sent .choice::before { content: "✓"; margin-right: 9px; color: #4f8a5a; }
 .hint { margin: 10px 0 0; color: var(--muted); font-size: 0.78rem;
   font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif; }
 
