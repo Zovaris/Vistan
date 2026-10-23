@@ -39,8 +39,8 @@ func usage(w io.Writer) {
                that agent's AGENTS.md or CLAUDE.md to teach it vistan
   --template   override the template declared in the document
 
-Templates: plan, summary, selection, review, map, diagram, graph, adr, spec,
-changelog.
+Templates: plan, summary, selection, guide, review, map, diagram, graph, adr,
+spec, changelog.
 Declare one in the document with  <!-- vistan: map -->  or pass --template.
 
 Env: VISTAN_PORT (default 8765), VISTAN_NO_OPEN=1, VISTAN_CACHE, VISTAN_KEEP
