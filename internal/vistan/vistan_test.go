@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -131,11 +133,84 @@ func TestSelectionPage(t *testing.T) {
 	if got := strings.Count(html, `type="radio"`); got != 3 {
 		t.Fatalf("radios = %d, want 3", got)
 	}
-	if !strings.Contains(html, `id="copy"`) {
-		t.Fatalf("copy button missing")
+	if !strings.Contains(html, `id="send"`) || !strings.Contains(html, "sendAnswer") {
+		t.Fatalf("send button missing")
 	}
 	if !strings.Contains(html, `value="A: First"`) {
 		t.Fatalf("first option value missing")
+	}
+}
+
+func TestAnswerEndpointStoresTheChoice(t *testing.T) {
+	dir := t.TempDir()
+	req := httptest.NewRequest("POST", "/_answer/pick", strings.NewReader(`{"answer":"B: Postgres"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	answerHandler(dir).ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusNoContent {
+		t.Fatalf("status = %d, want 204", rec.Code)
+	}
+	b, err := os.ReadFile(filepath.Join(dir, "pick.answer.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var stored answer
+	if err := json.Unmarshal(b, &stored); err != nil {
+		t.Fatal(err)
+	}
+	if stored.Answer != "B: Postgres" || stored.Page != "pick" || stored.At.IsZero() {
+		t.Fatalf("stored = %+v", stored)
+	}
+}
+
+func TestAnswerEndpointRefusesAForeignOrigin(t *testing.T) {
+	dir := t.TempDir()
+	req := httptest.NewRequest("POST", "/_answer/pick", strings.NewReader(`{"answer":"x"}`))
+	req.Header.Set("Origin", "https://example.com")
+	rec := httptest.NewRecorder()
+	answerHandler(dir).ServeHTTP(rec, req)
+
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status = %d, want 403", rec.Code)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "pick.answer.json")); !os.IsNotExist(err) {
+		t.Fatalf("a foreign origin stored an answer")
+	}
+}
+
+func TestAnswerCommandPrintsTheChoice(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("VISTAN_CACHE", dir)
+	page := "<!doctype html><html><head><title>Pick</title></head><body class=\"tpl-selection\"><h1>Pick</h1></body></html>"
+	if err := os.WriteFile(filepath.Join(dir, "pick.html"), []byte(page), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	stored := `{"page":"pick","answer":"B: Postgres","at":"2026-10-22T10:00:00Z"}`
+	if err := os.WriteFile(filepath.Join(dir, "pick.answer.json"), []byte(stored), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	out := captureStdout(t, func() {
+		if code := Run([]string{"answer", "pick"}); code != 0 {
+			t.Fatalf("answer = %d, want 0", code)
+		}
+	})
+	if strings.TrimSpace(out) != "B: Postgres" {
+		t.Fatalf("answer printed %q", out)
+	}
+}
+
+func TestAnswerCommandWithoutAnAnswer(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("VISTAN_CACHE", dir)
+	page := "<!doctype html><html><head><title>Pick</title></head><body class=\"tpl-selection\"><h1>Pick</h1></body></html>"
+	if err := os.WriteFile(filepath.Join(dir, "pick.html"), []byte(page), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if code := Run([]string{"answer", "pick"}); code != 1 {
+		t.Fatalf("answer with no answer = %d, want 1", code)
 	}
 }
 

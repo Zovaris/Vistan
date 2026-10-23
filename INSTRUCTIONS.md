@@ -52,6 +52,7 @@ vistan docs [path]               # index every ADR and spec under a directory
 vistan history [--json]          # the saved pages, grouped by project, or as JSON
 vistan index                     # same as history
 vistan open <name>               # reopen a saved page by name or prefix
+vistan answer <name>             # the choice the human sent from the page
 vistan rerender <name>           # rebuild a saved page from its stored source
 vistan rerender --all            # rebuild every saved page that has a source
 vistan rm <name>                 # delete saved pages
@@ -69,6 +70,18 @@ vistan <command> --help         # the usage, from any command
 in the command line, so `vistan serve --help` is the same text as `vistan --help`.
 `vistan brief` prints the brief and then the same usage, so an agent that reads only
 that one command still sees the env vars and the command list.
+
+`answer` prints the choice a human sent from a `selection` or a `review` page, one
+line on stdout, and exits `0`. With no answer yet it prints `no answer yet for <name>`
+on stderr and exits `1`, which is what a polling agent checks; a page that does not
+exist is `2`. The record is `<state>/<name>.answer.json`, next to the page and its
+source, and it is removed with the page.
+
+Pages do not ship a copy button. Both panels post to `POST /_answer/<page>` on the
+loopback server, which writes the record atomically and answers `204`. The handler
+refuses a foreign `Origin` (`403`) so another site cannot answer for the human, caps
+the body at 4 KB, and rejects an empty answer (`400`). The page derives its own name
+from `location.pathname`, so a renamed page keeps working.
 
 `clean` stops the server, then removes the state directory: the pages, their stored
 sources, the index and the pid file. Running it again prints `nothing to remove` and

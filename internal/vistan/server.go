@@ -1,9 +1,12 @@
 package vistan
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -99,12 +102,83 @@ func serveBase(dir string) string {
 }
 
 func runServer(dir string, port int) error {
+	mux := http.NewServeMux()
+	mux.Handle("POST /_answer/", answerHandler(dir))
+	mux.Handle("/", http.FileServer(http.Dir(dir)))
 	srv := &http.Server{
 		Addr:              fmt.Sprintf("127.0.0.1:%d", port),
-		Handler:           http.FileServer(http.Dir(dir)),
+		Handler:           mux,
 		ReadHeaderTimeout: 5 * time.Second,
 	}
 	return srv.ListenAndServe()
+}
+
+const maxAnswer = 4 << 10
+
+type answer struct {
+	Page   string    `json:"page"`
+	Answer string    `json:"answer"`
+	At     time.Time `json:"at"`
+}
+
+// answerHandler takes the choice a human made on a page and writes it next to the
+// page, where `vistan answer <name>` reads it. The page is the only writer: a foreign
+// origin is refused, so another site cannot answer on the human's behalf.
+func answerHandler(dir string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !sameOrigin(r) {
+			http.Error(w, "refusing a foreign origin", http.StatusForbidden)
+			return
+		}
+		segment := strings.TrimPrefix(r.URL.Path, "/_answer/")
+		if segment == "" || strings.Contains(segment, "/") {
+			http.Error(w, "no page name", http.StatusBadRequest)
+			return
+		}
+		name := pageName(strings.TrimSuffix(segment, ".html"))
+
+		body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxAnswer))
+		if err != nil {
+			http.Error(w, "answer too large", http.StatusRequestEntityTooLarge)
+			return
+		}
+		var sent struct {
+			Answer string `json:"answer"`
+		}
+		if err := json.Unmarshal(body, &sent); err != nil || strings.TrimSpace(sent.Answer) == "" {
+			http.Error(w, "expected {\"answer\": \"...\"}", http.StatusBadRequest)
+			return
+		}
+
+		payload, err := json.Marshal(answer{Page: name, Answer: sent.Answer, At: time.Now()})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		tmp := filepath.Join(dir, "."+name+".answer.tmp")
+		if err := os.WriteFile(tmp, payload, 0o644); err != nil {
+			http.Error(w, "could not store the answer", http.StatusInternalServerError)
+			return
+		}
+		if err := os.Rename(tmp, filepath.Join(dir, name+".answer.json")); err != nil {
+			http.Error(w, "could not store the answer", http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Cache-Control", "no-store")
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
+
+func sameOrigin(r *http.Request) bool {
+	origin := r.Header.Get("Origin")
+	if origin == "" {
+		return true
+	}
+	u, err := url.Parse(origin)
+	if err != nil {
+		return false
+	}
+	return u.Scheme == "http" && u.Host == r.Host
 }
 
 func stopServer(cache string, verbose bool) error {

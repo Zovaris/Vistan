@@ -74,6 +74,7 @@ func isIndexName(name string) bool {
 func removePage(dir, name string) {
 	os.Remove(filepath.Join(dir, name))
 	os.Remove(filepath.Join(dir, strings.TrimSuffix(name, ".html")+".md"))
+	os.Remove(filepath.Join(dir, strings.TrimSuffix(name, ".html")+".answer.json"))
 }
 
 func pageMeta(dir, name string) (string, string) {
@@ -366,6 +367,41 @@ func runOpen(args []string) int {
 	if os.Getenv("VISTAN_NO_OPEN") == "" {
 		openBrowser(url)
 	}
+	return 0
+}
+
+func runAnswer(args []string) int {
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "usage: vistan answer <name>")
+		return 2
+	}
+	dir := stateDir()
+	path, candidates := resolvePage(dir, args[0])
+	if path == "" {
+		if len(candidates) > 0 {
+			fmt.Fprintf(os.Stderr, "ambiguous: %s\n", strings.Join(candidates, " "))
+			return 2
+		}
+		fmt.Fprintf(os.Stderr, "no page matching %s; run vistan history\n", args[0])
+		return 2
+	}
+
+	name := strings.TrimSuffix(filepath.Base(path), ".html")
+	b, err := os.ReadFile(filepath.Join(dir, name+".answer.json"))
+	if os.IsNotExist(err) {
+		fmt.Fprintf(os.Stderr, "no answer yet for %s\n", name)
+		return 1
+	}
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 2
+	}
+	var stored answer
+	if err := json.Unmarshal(b, &stored); err != nil {
+		fmt.Fprintf(os.Stderr, "%s: unreadable answer: %v\n", name, err)
+		return 2
+	}
+	fmt.Println(stored.Answer)
 	return 0
 }
 

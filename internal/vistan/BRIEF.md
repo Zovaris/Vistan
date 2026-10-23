@@ -19,6 +19,7 @@ vistan docs [path]                  # index every ADR and spec into one page
 vistan history                      # saved pages, grouped by project
 vistan history --json               # the same list as JSON, no server
 vistan open <name>                  # reopen a saved page by name or prefix
+vistan answer <name>                # the choice the human sent from the page
 vistan rerender <name>              # rebuild a saved page from its stored source
 vistan rerender --all               # rebuild every saved page that has a source
 vistan rm <name>                    # delete saved pages
@@ -83,6 +84,15 @@ code                       a code block
 
 `###` inside a section is a small subheading.
 
+## The choice comes back on its own
+
+A `selection` page and a `review` page end in one button. The human picks, presses
+Send, and the page posts the choice to the local server, which stores it next to the
+page. `vistan answer <name>` prints it. If it exits `1`, nobody has chosen yet — wait,
+ask the human whether the page is open, and read it again. Do not build a page whose
+only purpose is a yes/no you could ask in a sentence, and never ask for the answer in
+the chat after the page exists.
+
 ## The graph and the decision log
 
 A `graph` document is an edge list, one arrow per line: `web --> api`. Node labels are
@@ -101,7 +111,9 @@ or editing a record.
 3. Put the test commands and their real results in `## Tests`, as checkboxes.
 4. Put disagreements and gaps in `## Notes`.
 5. `vistan new review > review.md`, fill it, `vistan serve review.md`.
-6. The human ticks the findings to apply and copies the decision line.
+6. The human ticks the findings and presses Send. Then run `vistan answer review`:
+   it prints `Apply F1, F2` and exits `0`, or prints `no answer yet` and exits `1`.
+   Never ask the human to paste the choice; the page wrote it for them.
 
 Never invent a finding you did not get from a reviewer, and never mark a test as
 passed when it was not run.

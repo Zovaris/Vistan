@@ -122,32 +122,48 @@ func renderFinding(b *strings.Builder, id, severity, location string, body []str
 }
 
 const reviewDecision = `<section class="decision">
-<div class="dhead"><p class="hint">Tick the findings you want applied, then copy the decision.</p></div>
+<div class="dhead"><p class="hint" id="hint">Tick the findings you want applied, then send the decision.</p></div>
 <div class="answer">
-<input id="ans" readonly value="Reject all findings" aria-label="Decision to copy">
-<button type="button" id="copy">Copy</button>
+<input id="ans" readonly value="Reject all findings" aria-label="Decision to send">
+<button type="button" id="send">Send</button>
 </div>
 <script>
 const boxes = Array.from(document.querySelectorAll('input.pick'));
 const ans = document.getElementById('ans');
-const copy = document.getElementById('copy');
+const send = document.getElementById('send');
+const hint = document.getElementById('hint');
 function sync() {
   const picked = boxes.filter(b => b.checked).map(b => b.value);
   ans.value = picked.length ? 'Apply ' + picked.join(', ') : 'Reject all findings';
 }
 boxes.forEach(b => b.addEventListener('change', sync));
-copy.addEventListener('click', async () => {
-  try {
-    await navigator.clipboard.writeText(ans.value);
-    copy.textContent = 'Copied';
-    setTimeout(() => { copy.textContent = 'Copy'; }, 1400);
-  } catch (e) {
-    ans.select();
-    copy.textContent = 'Cmd+C';
-  }
-});
+send.addEventListener('click', () => sendAnswer(ans.value, send, hint));
 </script>
 </section>
+`
+
+// sendAnswer posts the choice back to the server that served the page, so the agent
+// can read it with `vistan answer <page>` instead of the human pasting it in a chat.
+const sendAnswer = `<script>
+async function sendAnswer(value, button, hint) {
+  const name = location.pathname.split('/').pop().replace(/\.html$/, '');
+  button.disabled = true;
+  hint.textContent = 'Sending…';
+  try {
+    const res = await fetch('/_answer/' + encodeURIComponent(name), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answer: value }),
+    });
+    if (!res.ok) throw new Error(res.status);
+    button.textContent = 'Sent';
+    hint.textContent = 'Sent. The agent reads it with: vistan answer ' + name;
+  } catch (e) {
+    button.disabled = false;
+    hint.textContent = 'Could not reach the server. Run vistan serve again on this page.';
+  }
+}
+</script>
 `
 
 func statusClass(body []string) string {
@@ -168,30 +184,22 @@ func unreleasedClass(name string) string {
 }
 
 const selectionScript = `<div class="answer">
-<input id="ans" readonly placeholder="Pick an option" aria-label="Answer to copy">
-<button type="button" id="copy" disabled>Copy</button>
+<input id="ans" readonly placeholder="Pick an option" aria-label="Answer to send">
+<button type="button" id="send" disabled>Send</button>
 </div>
-<p class="hint" id="hint">Pick an option, then copy the answer into the chat.</p>
+<p class="hint" id="hint">Pick an option, then send it to the agent.</p>
 <script>
 const ans = document.getElementById('ans');
-const copy = document.getElementById('copy');
+const send = document.getElementById('send');
 const hint = document.getElementById('hint');
 for (const r of document.querySelectorAll('input[name=opt]')) {
   r.addEventListener('change', () => {
     ans.value = r.value;
-    copy.disabled = false;
-    hint.textContent = 'Copy the answer and paste it in the chat.';
+    send.disabled = false;
+    hint.textContent = 'Ready: ' + r.value;
   });
 }
-copy.addEventListener('click', async () => {
-  try {
-    await navigator.clipboard.writeText(ans.value);
-    hint.textContent = 'Copied: ' + ans.value;
-  } catch (e) {
-    ans.select();
-    hint.textContent = 'Copy failed. It is selected: use Cmd+C.';
-  }
-});
+send.addEventListener('click', () => sendAnswer(ans.value, send, hint));
 </script>
 `
 
@@ -356,12 +364,14 @@ func renderHTML(d *Doc, t Template, source, baseDir string) string {
 
 	if review && findings > 0 {
 		b.WriteString(reviewDecision)
+		b.WriteString(sendAnswer)
 	}
 
 	if selection {
 		b.WriteString("<section class=\"opt\">\n<label class=\"pick\"><input type=\"radio\" name=\"opt\" value=\"None: ask for another option\"><span class=\"key\">-</span><span class=\"ttl\">None of these</span></label>\n</section>\n")
 		b.WriteString("</fieldset>\n")
 		b.WriteString(selectionScript)
+		b.WriteString(sendAnswer)
 	} else if missing := d.Missing(t.Required); len(missing) > 0 {
 		fmt.Fprintf(&b, "<footer><span class=\"warn\">Missing or empty: %s</span></footer>\n", html.EscapeString(strings.Join(missing, " ")))
 	} else {

@@ -50,6 +50,7 @@ vistan docs docs/             # index every ADR and spec by status
 vistan history                # the saved pages, grouped by project
 vistan history --json         # the same list as JSON, for an agent
 vistan open treemap           # reopen a page by name or prefix
+vistan answer treemap         # the choice the human sent from the page
 vistan rerender treemap       # rebuild a page from its stored source
 vistan rm treemap             # delete saved pages
 vistan clean                  # stop the server and delete every saved page
@@ -77,6 +78,20 @@ That appends the commands, the template table, the markup that becomes a compone
 exit codes and the "do not" list. Do it once in the repository where the agent runs, not
 in this one. The short version, if you would rather write it by hand, is [the drop-in
 block in AGENTS.md](AGENTS.md#drop-in-block).
+
+## The choice comes back
+
+A `selection` or a `review` page ends in one button. The human picks, presses **Send**,
+and the page posts the choice to the same local server, which writes it next to the
+page. The agent runs `vistan answer <name>` and gets `C: An index in ~/.vistan/` on
+stdout, or `no answer yet` and exit `1` if nobody chose. Nothing is pasted, nothing is
+copied through the clipboard.
+
+The endpoint is `POST /_answer/<page>` on the loopback server. It refuses a request
+whose `Origin` is not the page's own, so another site cannot answer on the human's
+behalf, and it caps the body at 4 KB. The server binds `127.0.0.1` only, so over SSH
+you have to forward the port before the button can reach it. Rendering a page again
+deletes its old answer, so the agent never reads the choice from the previous run.
 
 ## Input
 

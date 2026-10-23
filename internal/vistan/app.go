@@ -25,6 +25,7 @@ func usage(w io.Writer) {
   history      list the saved pages and serve them (same as index)
   history --json  print the saved pages as JSON, no server
   open <name>  open a saved page by name or prefix
+  answer <name>  print the answer the human sent from a page (exit 1 if none yet)
   rerender <name>  rebuild a saved page from its stored source
   rerender --all   rebuild every saved page that has a stored source
   rm <name>    delete saved pages
@@ -60,7 +61,7 @@ func Run(args []string) int {
 	command := "show"
 	if len(args) > 0 {
 		switch args[0] {
-		case "serve", "stop", "clean", "uninstall", "new", "templates", "map", "docs", "index", "history", "open", "rerender", "rm", "brief", "serve-child":
+		case "serve", "stop", "clean", "uninstall", "new", "templates", "map", "docs", "index", "history", "open", "answer", "rerender", "rm", "brief", "serve-child":
 			command = args[0]
 			args = args[1:]
 		}
@@ -105,6 +106,8 @@ func Run(args []string) int {
 		return runIndex(args)
 	case "open":
 		return runOpen(args)
+	case "answer":
+		return runAnswer(args)
 	case "rerender":
 		return runRerender(args)
 	case "rm":
@@ -443,6 +446,9 @@ func serveDoc(doc *Doc, tpl Template, source, name, baseDir string, lines []stri
 		fmt.Fprintln(os.Stderr, err)
 		return 2
 	}
+	// A page that is rendered again is a new question: an answer from the last time it
+	// was shown would be read as the answer to this one.
+	os.Remove(filepath.Join(cache, name+".answer.json"))
 	keepPages(cache)
 	refreshIndex(cache)
 
