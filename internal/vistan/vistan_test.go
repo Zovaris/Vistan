@@ -598,6 +598,30 @@ func TestVersionIsPrinted(t *testing.T) {
 	}
 }
 
+func TestWithReloadInjectsTheScript(t *testing.T) {
+	page := "<html><body><p>x</p></body></html>"
+	got := withReload(page)
+	if !strings.Contains(got, "setInterval") || !strings.HasSuffix(got, "</body></html>") {
+		t.Fatalf("the reload script was not put before </body>: %s", got)
+	}
+	if tail := withReload("<p>x</p>"); !strings.HasSuffix(tail, reloadScript) {
+		t.Fatalf("a page without a body did not get the script: %s", tail)
+	}
+}
+
+func TestWatchNeedsServeAndAFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "page.md")
+	if err := os.WriteFile(path, []byte("# T\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if code := Run([]string{"--watch", path}); code != 2 {
+		t.Fatalf("--watch without serve = %d, want 2", code)
+	}
+	if code := Run([]string{"serve", "--watch", "-"}); code != 2 {
+		t.Fatalf("--watch with stdin = %d, want 2", code)
+	}
+}
+
 func TestSplitFlags(t *testing.T) {
 	got := strings.Join(splitFlags([]string{"--depth=3", "-x=1", "page.md", "--template=a=b", "--"}), "|")
 	want := "--depth|3|-x=1|page.md|--template|a=b|--"

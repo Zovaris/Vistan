@@ -38,11 +38,14 @@ Once it is public, that becomes plain `go install github.com/sthbryan/vistan/cmd
 ```sh
 vistan new plan > plan.md     # start from a template
 vistan serve plan.md          # build, serve on 127.0.0.1:8765 and open it
+vistan serve --watch plan.md  # the same, rebuilt on every save until Ctrl-C
 vistan plan.md                # the same document in the terminal
 ```
 
 `serve` prints the URL and leaves a detached server behind, so pages accumulate at the
-same origin. `vistan stop` ends it. `vistan --help` prints the usage; it works after any
+same origin. `vistan stop` ends it. `serve --watch` stays in the foreground instead,
+rebuilds the page on every save, and the open tab reloads itself; Ctrl-C stops the
+watcher, and the server keeps serving the last version. `vistan --help` prints the usage; it works after any
 command (`vistan serve --help`), and `vistan brief` prints it after the brief. A flag
 that takes a value reads either form: `--template map` or `--template=map`.
 

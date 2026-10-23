@@ -26,6 +26,7 @@ The clone, the `go install`, the private-module flag and the Homebrew formula li
 ```sh
 vistan <file.md>                 # print in the terminal
 vistan serve <file.md>           # build the page, start the server, open it
+vistan serve --watch <file.md>   # rebuild on every save, until Ctrl-C
 vistan map [path] [--depth N]    # scan a directory and serve its map
 vistan docs [path]               # index every ADR and spec under a directory
 vistan history [--json]          # the saved pages, grouped by project, or as JSON

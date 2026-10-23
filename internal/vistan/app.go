@@ -37,6 +37,7 @@ func usage(w io.Writer) {
   brief        print the rules for the agent that writes the pages; append it to
                that agent's AGENTS.md or CLAUDE.md to teach it vistan
   --template   override the template declared in the document
+  --watch      with serve: rebuild the page whenever the file changes
 
 Templates: plan, summary, selection, guide, review, map, diagram, graph, adr,
 spec, changelog.
@@ -216,9 +217,12 @@ func serveChild(args []string) int {
 func show(command string, args []string) int {
 	templateName := ""
 	src := ""
+	watch := false
 
 	for i := 0; i < len(args); i++ {
 		switch {
+		case args[i] == "--watch":
+			watch = true
 		case args[i] == "--template":
 			if i+1 >= len(args) {
 				usage(os.Stderr)
@@ -236,6 +240,14 @@ func show(command string, args []string) int {
 
 	if src == "" {
 		usage(os.Stderr)
+		return 2
+	}
+	if watch && command != "serve" {
+		fmt.Fprintln(os.Stderr, "--watch only works with serve")
+		return 2
+	}
+	if watch && src == "-" {
+		fmt.Fprintln(os.Stderr, "--watch needs a file, not stdin")
 		return 2
 	}
 
@@ -283,7 +295,7 @@ func show(command string, args []string) int {
 		return renderTerminal(doc, tpl, source, color, os.Stdout)
 	}
 
-	return serveDoc(doc, tpl, source, name, baseDir, lines)
+	return serveDoc(doc, tpl, source, name, baseDir, lines, watch)
 }
 
 func runMap(args []string) int {
@@ -323,7 +335,7 @@ func runMap(args []string) int {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
 	}
-	return serveDoc(doc, tpl, abs, pageName(filepath.Base(abs)), "", nil)
+	return serveDoc(doc, tpl, abs, pageName(filepath.Base(abs)), "", nil, false)
 }
 
 func pageName(s string) string {
@@ -354,13 +366,17 @@ func writePage(dir, name, content string, lines []string) error {
 	return os.WriteFile(filepath.Join(dir, name+".md"), []byte(source), 0o644)
 }
 
-func serveDoc(doc *Doc, tpl Template, source, name, baseDir string, lines []string) int {
+func serveDoc(doc *Doc, tpl Template, source, name, baseDir string, lines []string, watch bool) int {
 	cache := stateDir()
 	if err := os.MkdirAll(cache, 0o755); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
 	}
-	if err := writePage(cache, name, renderHTML(doc, tpl, source, baseDir), lines); err != nil {
+	page := renderHTML(doc, tpl, source, baseDir)
+	if watch {
+		page = withReload(page)
+	}
+	if err := writePage(cache, name, page, lines); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		return 2
 	}
@@ -389,6 +405,10 @@ func serveDoc(doc *Doc, tpl Template, source, name, baseDir string, lines []stri
 
 	if os.Getenv("VISTAN_NO_OPEN") == "" {
 		openBrowser(url)
+	}
+	if watch {
+		fmt.Printf("watching %s; Ctrl-C stops it\n", source)
+		watchPage(cache, name, source, baseDir)
 	}
 	return 0
 }
