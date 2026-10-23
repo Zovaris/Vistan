@@ -75,7 +75,7 @@ func Run(args []string) int {
 			return 2
 		}
 		if legacy := filepath.Join(os.TempDir(), "vistan"); legacy != stateDir() {
-			stopServer(legacy, false)
+			_ = stopServer(legacy, false)
 		}
 		return 0
 	case "clean":
@@ -131,9 +131,9 @@ func runClean() int {
 		return 2
 	}
 	if legacy := filepath.Join(os.TempDir(), "vistan"); legacy != dir {
-		stopServer(legacy, false)
+		_ = stopServer(legacy, false)
 		if os.Getenv("VISTAN_CACHE") == "" {
-			os.RemoveAll(legacy)
+			_ = os.RemoveAll(legacy)
 		}
 	}
 	if _, err := os.Stat(dir); os.IsNotExist(err) {

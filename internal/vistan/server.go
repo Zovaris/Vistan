@@ -55,7 +55,7 @@ func startServer(cache string, port int) (int, error) {
 		}
 		// A server from an older build cannot answer /_answer or serve the new page. It
 		// outlives an upgrade, so replace it instead of trusting the live pid.
-		syscall.Kill(pid, syscall.SIGTERM)
+		_ = syscall.Kill(pid, syscall.SIGTERM)
 		for i := 0; i < 50 && alive(pid); i++ {
 			time.Sleep(20 * time.Millisecond)
 		}
@@ -109,7 +109,9 @@ func runningVersion(cache string) string {
 func serveBase(dir string) string {
 	port := 8765
 	if p := os.Getenv("VISTAN_PORT"); p != "" {
-		fmt.Sscanf(p, "%d", &port)
+		if n, err := strconv.Atoi(p); err == nil {
+			port = n
+		}
 	}
 	if _, err := startServer(dir, port); err != nil {
 		fmt.Fprintln(os.Stderr, err)
@@ -210,7 +212,7 @@ func stopServer(cache string, verbose bool) error {
 		return nil
 	}
 	if alive(pid) {
-		syscall.Kill(pid, syscall.SIGTERM)
+		_ = syscall.Kill(pid, syscall.SIGTERM)
 	}
 	os.Remove(pidPath(cache))
 	if verbose {

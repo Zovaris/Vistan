@@ -121,8 +121,9 @@ func rerenderPage(dir, name, path string) error {
 	if err := writePage(dir, name, page, lines); err != nil {
 		return err
 	}
-	os.Chtimes(filepath.Join(dir, name+".html"), stamp, stamp)
-	os.Chtimes(filepath.Join(dir, name+".md"), stamp, stamp)
+	// The stamp only orders the history; a page that keeps its own mtime is still served.
+	_ = os.Chtimes(filepath.Join(dir, name+".html"), stamp, stamp)
+	_ = os.Chtimes(filepath.Join(dir, name+".md"), stamp, stamp)
 	return nil
 }
 
@@ -216,7 +217,7 @@ func refreshIndex(dir string) {
 	if err != nil {
 		return
 	}
-	writeIndex(dir, pages)
+	_ = writeIndex(dir, pages)
 }
 
 type jsonPage struct {

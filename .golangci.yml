@@ -1,0 +1,17 @@
+version: "2"
+
+linters:
+  default: standard
+  exclusions:
+    presets:
+      - comments
+      - std-error-handling
+    rules:
+      # Test setup writes fail as a missing directory, not as an unchecked error.
+      - path: _test\.go
+        linters:
+          - errcheck
+
+formatters:
+  enable:
+    - gofmt

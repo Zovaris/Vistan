@@ -164,7 +164,8 @@ func collectFiles(root string) ([]scannedFile, string) {
 	}
 
 	var files []scannedFile
-	filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+	// A partial tree is still worth a page: an unreadable directory skips its subtree.
+	_ = filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}
@@ -398,7 +399,8 @@ func entryLines(root string, files []scannedFile) []string {
 			if b, err := os.ReadFile(filepath.Join(root, name)); err == nil {
 				for _, line := range strings.Split(string(b), "\n") {
 					if strings.HasPrefix(strings.TrimSpace(line), "name = ") {
-						add("`" + name + "`: " + strings.Trim(strings.TrimSpace(line), `name = "`))
+						value := strings.TrimPrefix(strings.TrimSpace(line), "name = ")
+						add("`" + name + "`: " + strings.Trim(value, `"`))
 						break
 					}
 				}

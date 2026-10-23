@@ -279,6 +279,18 @@ func TestScanProject(t *testing.T) {
 	}
 }
 
+func TestEntryLinesReadTheProjectName(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "Cargo.toml"), []byte("[package]\nname = \"vistan\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	files, _ := collectFiles(dir)
+	body := strings.Join(entryLines(dir, files), "\n")
+	if !strings.Contains(body, "`Cargo.toml`: vistan") {
+		t.Fatalf("project name lost its letters:\n%s", body)
+	}
+}
+
 func TestNestedBullets(t *testing.T) {
 	d := parse(t, "# M\n\n## Modules\n\n- top\n  - child\n")
 	html := renderHTML(d, tpl(t, "map"), "x.md", "")
