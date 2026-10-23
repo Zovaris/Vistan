@@ -588,6 +588,36 @@ func TestHelpWorksAfterAnyCommand(t *testing.T) {
 	}
 }
 
+func TestVersionIsPrinted(t *testing.T) {
+	for _, args := range [][]string{{"version"}, {"--version"}} {
+		var code int
+		out := captureStdout(t, func() { code = Run(args) })
+		if code != 0 || out != "vistan "+version+"\n" {
+			t.Fatalf("Run(%v) = %d, %q; want 0 and the version", args, code, out)
+		}
+	}
+}
+
+func TestSplitFlags(t *testing.T) {
+	got := strings.Join(splitFlags([]string{"--depth=3", "-x=1", "page.md", "--template=a=b", "--"}), "|")
+	want := "--depth|3|-x=1|page.md|--template|a=b|--"
+	if got != want {
+		t.Fatalf("splitFlags = %q, want %q", got, want)
+	}
+}
+
+func TestFlagWithEqualsReachesTheCommand(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "page.md")
+	if err := os.WriteFile(path, []byte("# T\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	var code int
+	captureStdout(t, func() { code = Run([]string{"--template=nope", path}) })
+	if code != 2 {
+		t.Fatalf("--template=nope = %d, want 2 from the unknown template", code)
+	}
+}
+
 func TestBriefEndsWithTheUsage(t *testing.T) {
 	out := captureStdout(t, func() { Run([]string{"brief"}) })
 	if !strings.HasPrefix(out, "# vistan brief") || !strings.Contains(out, "\nusage: vistan") {

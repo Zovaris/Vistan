@@ -43,7 +43,8 @@ vistan plan.md                # the same document in the terminal
 
 `serve` prints the URL and leaves a detached server behind, so pages accumulate at the
 same origin. `vistan stop` ends it. `vistan --help` prints the usage; it works after any
-command (`vistan serve --help`), and `vistan brief` prints it after the brief.
+command (`vistan serve --help`), and `vistan brief` prints it after the brief. A flag
+that takes a value reads either form: `--template map` or `--template=map`.
 
 ```sh
 vistan map .                  # scan a directory into a map page
@@ -56,6 +57,7 @@ vistan rerender treemap       # rebuild a page from its stored source
 vistan rm treemap             # delete saved pages
 vistan clean                  # stop the server and delete every saved page
 vistan uninstall              # clean, then delete the binary
+vistan version                # the version of this binary
 vistan brief                  # instructions for the agent that writes the pages
 ```
 

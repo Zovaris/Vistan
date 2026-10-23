@@ -33,6 +33,7 @@ func usage(w io.Writer) {
   uninstall    clean, then delete the binary
   new          print a template to stdout
   templates    list the templates
+  version      print the version of the binary
   brief        print the rules for the agent that writes the pages; append it to
                that agent's AGENTS.md or CLAUDE.md to teach it vistan
   --template   override the template declared in the document
@@ -49,10 +50,31 @@ Pages are kept between runs, newest first, in the user state directory:
 `)
 }
 
+// splitFlags turns --name=value into two arguments, so the flag loops below can keep
+// reading the value from the argument that follows.
+func splitFlags(args []string) []string {
+	out := make([]string, 0, len(args))
+	for _, a := range args {
+		if strings.HasPrefix(a, "--") {
+			if name, value, ok := strings.Cut(a, "="); ok {
+				out = append(out, name, value)
+				continue
+			}
+		}
+		out = append(out, a)
+	}
+	return out
+}
+
 func Run(args []string) int {
+	args = splitFlags(args)
 	for i, a := range args {
 		if a == "-h" || a == "--help" || (i == 0 && a == "help") {
 			usage(os.Stdout)
+			return 0
+		}
+		if a == "--version" || (i == 0 && a == "version") {
+			fmt.Printf("vistan %s\n", version)
 			return 0
 		}
 	}
