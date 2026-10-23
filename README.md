@@ -1,4 +1,4 @@
-# vistan
+# Vistan
 
 Markdown in, a page a human reads out.
 
@@ -69,7 +69,7 @@ runs `clean` first and only then deletes the binary it is running from.
 
 ## Use it from an agent
 
-vistan is a plain CLI, so any agent that can run shell commands can use it: no plugin,
+Vistan is a plain CLI, so any agent that can run shell commands can use it: no plugin,
 no MCP server, no daemon to register. What it cannot guess is that vistan exists and
 what shape the pages have. The brief is inside the binary for exactly that:
 
