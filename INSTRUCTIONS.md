@@ -60,7 +60,13 @@ vistan stop                      # stop the server
 vistan new <template>            # print a template to stdout
 vistan templates                 # list templates
 vistan serve --template map x.md # override the declared template
+vistan <command> --help         # the usage, from any command
 ```
+
+`-h`, `--help` and `help` print the usage on stdout and exit `0`, wherever they appear
+in the command line, so `vistan serve --help` is the same text as `vistan --help`.
+`vistan brief` prints the brief and then the same usage, so an agent that reads only
+that one command still sees the env vars and the command list.
 
 `serve` starts a detached HTTP server on `127.0.0.1:8765` and prints the URL. It
 survives the command that launched it, because it is re-executed in its own session.
@@ -152,10 +158,10 @@ as normal sections.
 ## Delegating the page work
 
 `vistan brief` prints [BRIEF.md](internal/vistan/BRIEF.md): what the tool does, which template to pick,
-the markup that becomes a component, the review workflow and the exit codes. Give that
-text to the sub-agent that writes the pages, and keep the orchestrator for deciding
-what to review and what to apply. The brief is embedded in the binary, so it always
-matches the version that renders the page.
+the markup that becomes a component, the review workflow and the exit codes, followed
+by the usage. Give that text to the sub-agent that writes the pages, and keep the
+orchestrator for deciding what to review and what to apply. The brief is embedded in
+the binary, so it always matches the version that renders the page.
 
 ## The agent workflow
 

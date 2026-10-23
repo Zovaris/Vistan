@@ -41,7 +41,8 @@ vistan plan.md                # the same document in the terminal
 ```
 
 `serve` prints the URL and leaves a detached server behind, so pages accumulate at the
-same origin. `vistan stop` ends it.
+same origin. `vistan stop` ends it. `vistan --help` prints the usage; it works after any
+command (`vistan serve --help`), and `vistan brief` prints it after the brief.
 
 ```sh
 vistan map .                  # scan a directory into a map page

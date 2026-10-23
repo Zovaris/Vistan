@@ -48,15 +48,19 @@ Pages are kept between runs, newest first, in the user state directory:
 }
 
 func Run(args []string) int {
+	for i, a := range args {
+		if a == "-h" || a == "--help" || (i == 0 && a == "help") {
+			usage(os.Stdout)
+			return 0
+		}
+	}
+
 	command := "show"
 	if len(args) > 0 {
 		switch args[0] {
 		case "serve", "stop", "new", "templates", "map", "docs", "index", "history", "open", "rerender", "rm", "brief", "serve-child":
 			command = args[0]
 			args = args[1:]
-		case "-h", "--help", "help":
-			usage(os.Stderr)
-			return 2
 		}
 	}
 
@@ -76,7 +80,8 @@ func Run(args []string) int {
 		}
 		return 0
 	case "brief":
-		fmt.Print(agentBrief)
+		fmt.Println(agentBrief)
+		usage(os.Stdout)
 		return 0
 	case "new":
 		if len(args) < 1 {

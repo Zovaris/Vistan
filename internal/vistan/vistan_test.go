@@ -3,6 +3,7 @@ package vistan
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -428,6 +429,44 @@ func TestBriefIsEmbedded(t *testing.T) {
 		if !strings.Contains(agentBrief, want) {
 			t.Fatalf("brief missing %q", want)
 		}
+	}
+}
+
+func captureStdout(t *testing.T, f func()) string {
+	t.Helper()
+	old := os.Stdout
+	r, w, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.Stdout = w
+	f()
+	w.Close()
+	os.Stdout = old
+	out, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(out)
+}
+
+func TestHelpWorksAfterAnyCommand(t *testing.T) {
+	for _, args := range [][]string{{"--help"}, {"help"}, {"serve", "--help"}, {"rerender", "--all", "-h"}} {
+		var code int
+		out := captureStdout(t, func() { code = Run(args) })
+		if code != 0 {
+			t.Fatalf("Run(%v) = %d, want 0", args, code)
+		}
+		if !strings.HasPrefix(out, "usage: vistan") {
+			t.Fatalf("Run(%v) printed %q, want the usage", args, out)
+		}
+	}
+}
+
+func TestBriefEndsWithTheUsage(t *testing.T) {
+	out := captureStdout(t, func() { Run([]string{"brief"}) })
+	if !strings.HasPrefix(out, "# vistan brief") || !strings.Contains(out, "\nusage: vistan") {
+		t.Fatalf("brief did not print the brief followed by the usage")
 	}
 }
 
