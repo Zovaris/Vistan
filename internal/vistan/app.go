@@ -22,7 +22,8 @@ func usage(w io.Writer) {
   serve        build the page, start a local server and open it
   map [path]   scan a directory and render it as a map (default: .)
   docs [path]  index the ADRs and specs under a directory (default: .)
-  history      list the saved pages and serve them (same as index)
+  history      list the saved pages and serve them
+  index        same as history
   history --json  print the saved pages as JSON, no server
   open <name>  open a saved page by name or prefix
   answer <name>  print the answer the human sent from a page (exit 1 if none yet)
