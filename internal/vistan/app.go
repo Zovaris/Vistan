@@ -29,6 +29,7 @@ func usage(w io.Writer) {
   stop         stop the local server
   clean        stop the server and delete the saved pages
   uninstall    clean, then delete the binary
+  update       install the latest release over this binary
   new          print a template to stdout
   templates    list the templates
   version      print the version of the binary
@@ -82,7 +83,7 @@ func Run(args []string) int {
 	command := "show"
 	if len(args) > 0 {
 		switch args[0] {
-		case "serve", "stop", "clean", "uninstall", "new", "templates", "map", "docs", "index", "history", "open", "answer", "rerender", "rm", "brief", "serve-child":
+		case "serve", "stop", "clean", "uninstall", "update", "new", "templates", "map", "docs", "index", "history", "open", "answer", "rerender", "rm", "brief", "serve-child":
 			command = args[0]
 			args = args[1:]
 		}
@@ -102,6 +103,8 @@ func Run(args []string) int {
 		return runClean()
 	case "uninstall":
 		return runUninstall()
+	case "update":
+		return runUpdate()
 	case "templates":
 		for _, t := range templateList {
 			fmt.Println(t.Name)

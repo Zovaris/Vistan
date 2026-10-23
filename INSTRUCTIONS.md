@@ -40,6 +40,7 @@ vistan brief                     # the instructions for the agent that writes pa
 vistan stop                      # stop the server
 vistan clean                     # stop the server and delete the saved pages
 vistan uninstall                 # clean, then delete the binary
+vistan update                    # install the latest release over the binary
 vistan version                   # print the version of the binary
 vistan new <template>            # print a template to stdout
 vistan templates                 # list templates

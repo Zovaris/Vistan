@@ -91,9 +91,14 @@ vistan rerender treemap       # rebuild a page from its stored source
 vistan rm treemap             # delete saved pages
 vistan clean                  # stop the server and delete every saved page
 vistan uninstall              # clean, then delete the binary
+vistan update                 # install the latest release over the binary
 vistan version                # the version of this binary
 vistan brief                  # the rules for the agent that writes the pages
 ```
+
+`update` compares the binary with the latest release and, when there is a newer one,
+downloads its archive, checks it against `checksums.txt` and replaces the binary in place.
+A Homebrew install is told to `brew upgrade vistan` instead of being overwritten under it.
 
 `clean` stops the server and removes the state directory, then says `nothing to remove`
 if there was nothing left. It refuses a path that holds more than Vistan's own pages — a

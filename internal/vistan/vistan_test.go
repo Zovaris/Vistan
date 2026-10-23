@@ -1,6 +1,9 @@
 package vistan
 
 import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -1215,5 +1218,52 @@ func TestOrderedList(t *testing.T) {
 		if !strings.Contains(html, want) {
 			t.Fatalf("ordered list missing %q:\n%s", want, html)
 		}
+	}
+}
+
+func TestAssetName(t *testing.T) {
+	if got := assetName("v0.1.1", "darwin", "arm64"); got != "vistan_0.1.1_darwin_arm64.tar.gz" {
+		t.Fatalf("unexpected archive name %q", got)
+	}
+	if got := assetName("v0.1.1", "windows", "amd64"); got != "" {
+		t.Fatalf("windows has no archive, got %q", got)
+	}
+}
+
+func TestChecksumFor(t *testing.T) {
+	sums := "aa11  vistan_0.1.1_darwin_arm64.tar.gz\nbb22  checksums.txt\n"
+	if got := checksumFor(sums, "vistan_0.1.1_darwin_arm64.tar.gz"); got != "aa11" {
+		t.Fatalf("expected aa11, got %q", got)
+	}
+	if got := checksumFor(sums, "vistan_0.1.1_linux_amd64.tar.gz"); got != "" {
+		t.Fatalf("expected no checksum, got %q", got)
+	}
+}
+
+func TestBinaryFromTarGz(t *testing.T) {
+	var buf bytes.Buffer
+	gz := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gz)
+	for _, name := range []string{"README.md", "vistan"} {
+		body := []byte("body of " + name)
+		if err := tw.WriteHeader(&tar.Header{Name: name, Mode: 0o644, Size: int64(len(body))}); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := tw.Write(body); err != nil {
+			t.Fatal(err)
+		}
+	}
+	tw.Close()
+	gz.Close()
+
+	got, err := binaryFromTarGz(buf.Bytes(), "vistan")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "body of vistan" {
+		t.Fatalf("unexpected contents %q", got)
+	}
+	if _, err := binaryFromTarGz(buf.Bytes(), "missing"); err == nil {
+		t.Fatal("expected an error for a missing entry")
 	}
 }
