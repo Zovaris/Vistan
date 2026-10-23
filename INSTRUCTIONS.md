@@ -345,7 +345,7 @@ Anything else stays literal text, which is why a broken document still renders.
 ## How it looks
 
 A paper document, not a dashboard: warm off-white, near-black ink, serif body at a
-38rem measure, one hairline rule per section, italic section headings with a muted
+44rem measure, one hairline rule per section, italic section headings with a muted
 count. Dark mode follows `prefers-color-scheme`. No web fonts, no shadows, no cards.
 The tab carries an inline SVG favicon and every page opens with a small `← History`
 link, so the browser tab and the page itself both say where you are.
