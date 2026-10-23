@@ -31,8 +31,8 @@ curl -fsSL https://raw.githubusercontent.com/zovaris/vistan/main/install.sh | sh
 
 It reads the latest tag, downloads the archive for your platform, checks it against the
 release's `checksums.txt` and puts `vistan` in `/usr/local/bin`, or in `~/.local/bin` when
-that one is not writable. `| sh -s -- v0.1.0` installs a specific release, and
-`VISTAN_BIN_DIR` chooses another directory.
+that one is not writable. `| sh -s -- v0.1.0` installs a specific release (the `v` is
+optional), and `VISTAN_BIN_DIR` chooses another directory.
 
 On macOS, with Homebrew:
 
@@ -209,7 +209,8 @@ repository layout.
 ## Releases
 
 The tag is the version: nothing in the repository stores it. `make version VERSION=0.1.0`
-checks the tree is clean on `main`, creates the annotated tag and pushes it;
+(or `VERSION=v0.1.0`, the tag is written with the `v` either way) checks the tree is clean
+on `main`, creates the annotated tag and pushes it;
 `make version BUMP=minor` raises the last tag instead, `make next-version` only prints what
 that would do, and `DRY=1` or `NO_PUSH=1` stop before touching the remote. Pushing the tag
 runs `.github/workflows/release.yml`, which repeats the checks, confirms the binary reports

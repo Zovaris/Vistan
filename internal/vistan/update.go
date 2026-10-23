@@ -35,7 +35,7 @@ func runUpdate() int {
 		fmt.Fprintf(os.Stderr, "could not read the latest release: %v\n", err)
 		return 1
 	}
-	if strings.TrimPrefix(tag, "v") == current {
+	if bareVersion(tag) == current {
 		fmt.Printf("vistan %s is the latest release\n", current)
 		return 0
 	}
@@ -53,7 +53,7 @@ func runUpdate() int {
 		fmt.Fprintf(os.Stderr, "update failed: %v\n", err)
 		return 1
 	}
-	fmt.Printf("vistan %s -> %s in %s\n", current, strings.TrimPrefix(tag, "v"), exe)
+	fmt.Printf("vistan %s -> %s in %s\n", current, bareVersion(tag), exe)
 	return 0
 }
 
@@ -131,7 +131,7 @@ func assetName(tag, goos, goarch string) string {
 	if goos != "darwin" && goos != "linux" {
 		return ""
 	}
-	return fmt.Sprintf("vistan_%s_%s_%s.tar.gz", strings.TrimPrefix(tag, "v"), goos, goarch)
+	return fmt.Sprintf("vistan_%s_%s_%s.tar.gz", bareVersion(tag), goos, goarch)
 }
 
 func checksumFor(sums, name string) string {

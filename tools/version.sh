@@ -39,6 +39,8 @@ current="${current#v}"
 current="$(normalize "${current:-0.0.0}")"
 
 if [ -n "$TARGET" ]; then
+  # the tag carries the v, the number does not: accept either spelling here
+  TARGET="${TARGET#v}"
   [[ "$TARGET" =~ ^[0-9]+(\.[0-9]+){0,2}$ ]] || { echo "not a version: $TARGET (expected X.Y.Z)"; exit 2; }
   next="$(normalize "$TARGET")"
 else

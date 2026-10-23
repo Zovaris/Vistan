@@ -381,5 +381,7 @@ one package. Splitting by layer would only add exported names and imports.
 CI runs; [README.md](README.md#development) explains how `lefthook.yml` runs `gofmt` on
 the staged files at commit time and the four at push time. The version comes from the
 git tag, so `make version` only tags and pushes: nothing in the tree stores it, and the
-release workflow builds the archives from that tag. `vistan serve-child` is internal: it is the foreground process
+release workflow builds the archives from that tag. The tag carries a `v` (`v0.1.2`) and
+nothing else does: `--version`, `update` and the archive names all use the bare number,
+and `make version VERSION=` and `install.sh` accept either spelling. `vistan serve-child` is internal: it is the foreground process
 that `serve` spawns, and it only serves the cache directory it is given.

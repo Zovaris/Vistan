@@ -1221,6 +1221,19 @@ func TestOrderedList(t *testing.T) {
 	}
 }
 
+func TestBareVersion(t *testing.T) {
+	for _, tc := range []struct{ in, want string }{
+		{"v0.1.2", "0.1.2"},
+		{"0.1.2", "0.1.2"},
+		{"v1.0.0-rc1", "1.0.0-rc1"},
+		{"dev", "dev"},
+	} {
+		if got := bareVersion(tc.in); got != tc.want {
+			t.Fatalf("bareVersion(%q) = %q, want %q", tc.in, got, tc.want)
+		}
+	}
+}
+
 func TestAssetName(t *testing.T) {
 	if got := assetName("v0.1.1", "darwin", "arm64"); got != "vistan_0.1.1_darwin_arm64.tar.gz" {
 		t.Fatalf("unexpected archive name %q", got)

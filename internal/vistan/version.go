@@ -12,6 +12,12 @@ import (
 // goreleaser does that on every release, so a tagged build always knows its version.
 var version = "dev"
 
+// bareVersion is the one place that knows the tag carries a v and the binary does not:
+// every version a command prints, compares or puts in a file name comes through here.
+func bareVersion(v string) string {
+	return strings.TrimPrefix(v, "v")
+}
+
 // versionFromBuildInfo keeps the module version of a tagged `go install ...@v0.1.0`
 // and throws away the pseudo-version a build from a checkout records.
 func versionFromBuildInfo(v string) string {
