@@ -489,9 +489,37 @@ func treemapSVG(files []scannedFile, root string) string {
 	var b strings.Builder
 	b.WriteString(`<svg viewBox="0 0 720 300" role="img" aria-label="Where the bytes are">` + "\n")
 	placeTM(tree, tmRect{0, 0, 720, 300}, 0, 0, &b)
-	b.WriteString("</svg>")
+	b.WriteString("</svg>\n")
+	b.WriteString(`<p class="tm-cap" aria-hidden="true">Hover a tile to see its name and size</p>` + "\n")
+	b.WriteString(treemapHover)
 	return b.String()
 }
+
+// treemapHover names the tile under the cursor in one line below the map, so a
+// tile too small for its own text needs no text at all.
+const treemapHover = `<script>
+(() => {
+  const svg = document.querySelector('.art svg');
+  if (!svg) return;
+  const cap = svg.parentElement.querySelector('.tm-cap');
+  const idle = cap.textContent;
+  let hot = null;
+  svg.addEventListener('pointerover', e => {
+    const g = e.target.closest('g.tm');
+    if (!g || g === hot) return;
+    if (hot) hot.classList.remove('hot');
+    hot = g;
+    hot.classList.add('hot');
+    const t = g.querySelector('title');
+    if (t) cap.textContent = t.textContent;
+  });
+  svg.addEventListener('pointerleave', () => {
+    if (hot) hot.classList.remove('hot');
+    hot = null;
+    cap.textContent = idle;
+  });
+})();
+</script>`
 
 func placeTM(n *tmNode, r tmRect, depth, hue int, b *strings.Builder) {
 	if depth >= 2 || len(n.kids) == 0 || r.w < 10 || r.h < 10 {

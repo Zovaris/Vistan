@@ -393,8 +393,10 @@ func TestTreemapArtifact(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(doc.Artifact, "<svg") || !strings.Contains(doc.Artifact, "lib") {
-		t.Fatalf("treemap artifact missing: %q", doc.Artifact)
+	for _, want := range []string{"<svg", "lib", "<title>", `class="tm-cap"`, "<script>"} {
+		if !strings.Contains(doc.Artifact, want) {
+			t.Fatalf("treemap artifact missing %q: %q", want, doc.Artifact)
+		}
 	}
 	if html := renderHTML(doc, tpl(t, "map"), "x", ""); !strings.Contains(html, `<div class="art">`) {
 		t.Fatalf("treemap not rendered into the page")

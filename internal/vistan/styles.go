@@ -169,6 +169,10 @@ h3:first-child { margin-top: 4px; }
 .art .tm-c5 rect { fill: #5e8c85; }
 .art .tm-d0 rect { fill-opacity: 0.3; }
 .art .tm-d1 rect { fill-opacity: 0.16; }
+.art .tm.hot rect { stroke: var(--ink); stroke-opacity: 0.55; }
+.art .tm-cap { margin: 6px 0 0; min-height: 1.2em; color: var(--muted);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.72rem;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 figure { margin: 16px 0; }
 figure img { display: block; max-width: 100%; height: auto;
   border: 1px solid var(--rule); border-radius: 3px; }
