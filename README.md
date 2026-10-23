@@ -209,3 +209,8 @@ checks the tree is clean on `main`, creates the annotated tag and pushes it;
 that would do, and `DRY=1` or `NO_PUSH=1` stop before touching the remote. Pushing the tag
 runs `.github/workflows/release.yml`, which repeats the checks, confirms the binary reports
 that tag, and lets goreleaser build and publish the archives.
+
+## License
+
+Vistan is licensed under the GNU General Public License, version 3 or any later version.
+See [`LICENSE`](LICENSE).
