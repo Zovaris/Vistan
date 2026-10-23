@@ -120,14 +120,16 @@ footer .warn { color: #8a4b1f; }
 fieldset.opts { border: 0; padding: 0; margin: 36px 0 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-.opt .pick { display: flex; align-items: baseline; gap: 0.7rem; cursor: pointer; }
-.opt .pick input { margin: 0; accent-color: var(--ink); }
-.opt .key { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 0.78rem; color: var(--muted); min-width: 1.1em; }
+.opt .pick { display: flex; align-items: center; gap: 0.8rem; cursor: pointer; }
+.opt .pick input { margin: 0; accent-color: var(--ink); cursor: pointer; }
+.opt .key { display: inline-flex; align-items: center; justify-content: center;
+  width: 1.5rem; height: 1.5rem; border: 1px solid var(--rule); border-radius: 4px;
+  background: var(--field); font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
+  font-size: 0.7rem; line-height: 1; color: var(--muted); }
 .opt { cursor: pointer; }
-.opt input[name=opt] { cursor: pointer; }
+.opt:has(input:checked) .key { border-color: var(--ink); color: var(--ink); }
 .opt .ttl { font-size: 1.05rem; }
-.opt .desc { margin: 6px 0 0 2.1rem; }
+.opt .desc { margin: 8px 0 0 3.9rem; }
 .opt .desc > :first-child { margin-top: 0; }
 .opt .desc > :last-child { margin-bottom: 0; }
 .opt:has(input:checked) { border-top-color: var(--ink); }
