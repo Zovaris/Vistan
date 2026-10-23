@@ -48,6 +48,7 @@ Use `vistan history --json` when you need the list as data instead of prose.
 | `plan` | the human must agree before you start: decisions, rejected options, steps, files, verification, what you need from them |
 | `summary` | work is finished and the human needs what changed, what you verified and what is pending |
 | `selection` | one decision with 2–4 options; each option can carry an image, code and prose |
+| `guide` | explaining how something works, with numbered steps when it is a walkthrough |
 | `review` | several reviewers looked at a change: findings by severity, tests, and what to apply |
 | `adr` | one decision that must stay recorded, with context, options and consequences |
 | `changelog` | what changed per release, grouped by version |
@@ -65,6 +66,8 @@ Declare the template with the first line of the document: `<!-- vistan: plan -->
 ## Section                 a section
 - [x] done step            a checkbox, counted in the header and the summary strip
 - [ ] pending step
+1. numbered step           an ordered list, for a walkthrough
+2. next step
 > [!WARN] Title            a labelled callout: note, tip, warn, risk, decision, question
 > body
 

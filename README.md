@@ -121,8 +121,8 @@ rendered by vistan itself.
 
 ## Templates
 
-`plan`, `summary`, `selection`, `review`, `map`, `diagram`, `graph`, `adr`, `spec`,
-`changelog`. `vistan templates` lists them; `vistan new <name>` prints one.
+`plan`, `summary`, `selection`, `guide`, `review`, `map`, `diagram`, `graph`, `adr`,
+`spec`, `changelog`. `vistan templates` lists them; `vistan new <name>` prints one.
 
 ## Where the pages live
 

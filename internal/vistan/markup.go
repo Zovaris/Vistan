@@ -11,12 +11,13 @@ import (
 )
 
 var (
-	bulletLine = regexp.MustCompile(`^[ \t]*[-*][ \t]`)
-	indentOnly = regexp.MustCompile(`^[ \t]*`)
-	taskLine   = regexp.MustCompile(`^[ \t]*[-*][ \t]+\[([ xX])\][ \t]+(.*)$`)
-	fenceOpen  = regexp.MustCompile("^[ \\t]*```[ \\t]*([^` \\t]*)")
-	calloutTag = regexp.MustCompile(`^\[!([A-Za-z]+)\][ \t]*(.*)$`)
-	riskTag    = regexp.MustCompile(`(?i)^[ \t]*>[ \t]*\[!(warn|risk)\]`)
+	bulletLine  = regexp.MustCompile(`^[ \t]*[-*][ \t]`)
+	orderedLine = regexp.MustCompile(`^[ \t]*\d+[.)][ \t]+`)
+	indentOnly  = regexp.MustCompile(`^[ \t]*`)
+	taskLine    = regexp.MustCompile(`^[ \t]*[-*][ \t]+\[([ xX])\][ \t]+(.*)$`)
+	fenceOpen   = regexp.MustCompile("^[ \\t]*```[ \\t]*([^` \\t]*)")
+	calloutTag  = regexp.MustCompile(`^\[!([A-Za-z]+)\][ \t]*(.*)$`)
+	riskTag     = regexp.MustCompile(`(?i)^[ \t]*>[ \t]*\[!(warn|risk)\]`)
 )
 var (
 	inlineToken = regexp.MustCompile("`([^`]+)`|\\*\\*([^*]+)\\*\\*|\\[([^\\]]+)\\]\\(([^)\\s]+)\\)")
@@ -89,15 +90,23 @@ func imageSrc(src, baseDir string) string {
 }
 
 func renderBody(b *strings.Builder, lines []string, baseDir string) {
-	inList := false
+	listTag := ""
 	inFence := false
 	fenceKind := ""
 
 	closeList := func() {
-		if inList {
-			b.WriteString("</ul>\n")
-			inList = false
+		if listTag != "" {
+			b.WriteString("</" + listTag + ">\n")
+			listTag = ""
 		}
+	}
+	openList := func(tag string) {
+		if listTag == tag {
+			return
+		}
+		closeList()
+		b.WriteString("<" + tag + ">\n")
+		listTag = tag
 	}
 
 	for i := 0; i < len(lines); i++ {
@@ -109,7 +118,7 @@ func renderBody(b *strings.Builder, lines []string, baseDir string) {
 			if fenceLine.MatchString(line) {
 				if fenceKind == "changes" {
 					b.WriteString("</ul>\n")
-					inList = false
+					listTag = ""
 				} else {
 					b.WriteString("</code></pre>\n")
 				}
@@ -129,7 +138,7 @@ func renderBody(b *strings.Builder, lines []string, baseDir string) {
 			inFence = true
 			if fenceKind == "changes" {
 				b.WriteString("<ul class=\"changes\">\n")
-				inList = true
+				listTag = "ul"
 				continue
 			}
 			b.WriteString("<pre><code>\n")
@@ -146,10 +155,7 @@ func renderBody(b *strings.Builder, lines []string, baseDir string) {
 			closeList()
 			fmt.Fprintf(b, "<h3>%s</h3>\n", inline(strings.TrimSpace(trimmed[4:])))
 		case taskLine.MatchString(line):
-			if !inList {
-				b.WriteString("<ul>\n")
-				inList = true
-			}
+			openList("ul")
 			m := taskLine.FindStringSubmatch(line)
 			done := m[1] != " "
 			class, box := "task", "&#9744;"
@@ -159,11 +165,13 @@ func renderBody(b *strings.Builder, lines []string, baseDir string) {
 			level := len(indentOnly.FindString(line)) / 2
 			fmt.Fprintf(b, "<li class=\"%s\" style=\"--l:%d\"><span class=\"box\">%s</span><span class=\"txt\">%s</span></li>\n",
 				class, level, box, inline(m[2]))
+		case orderedLine.MatchString(line):
+			openList("ol")
+			level := len(indentOnly.FindString(line)) / 2
+			text := strings.TrimSpace(orderedLine.ReplaceAllString(line, ""))
+			fmt.Fprintf(b, "<li style=\"--l:%d\">%s</li>\n", level, inline(text))
 		case bulletLine.MatchString(line):
-			if !inList {
-				b.WriteString("<ul>\n")
-				inList = true
-			}
+			openList("ul")
 			level := len(indentOnly.FindString(line)) / 2
 			text := strings.TrimSpace(bulletLine.ReplaceAllString(line, ""))
 			fmt.Fprintf(b, "<li style=\"--l:%d\">%s</li>\n", level, inline(text))
@@ -185,6 +193,7 @@ func renderBody(b *strings.Builder, lines []string, baseDir string) {
 	if inFence {
 		if fenceKind == "changes" {
 			b.WriteString("</ul>\n")
+			listTag = ""
 		} else {
 			b.WriteString("</code></pre>\n")
 		}

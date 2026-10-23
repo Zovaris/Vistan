@@ -26,7 +26,8 @@ h2 { display: flex; align-items: baseline; justify-content: space-between; gap: 
 h2 span { font-family: ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
   font-size: 0.7rem; font-style: normal; letter-spacing: 0.05em; color: var(--muted);
   font-variant-numeric: tabular-nums; }
-ul { margin: 4px 0 0; padding-left: 1.2em; }
+ul, ol { margin: 4px 0 0; padding-left: 1.2em; }
+ol { padding-left: 1.5em; }
 li { margin: 0 0 8px; margin-left: calc(var(--l, 0) * 1.2em); }
 li:last-child { margin-bottom: 0; }
 li::marker { color: var(--muted); }

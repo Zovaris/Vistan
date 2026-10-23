@@ -130,6 +130,7 @@ the file. That is the hook an agent can check before showing you anything.
 | `plan` | Decisions, Rejected, Verification, Your move (plus optional Steps and Files) | agreeing on work before doing it |
 | `summary` | What changed, Verification, Pending | reporting work just finished |
 | `selection` | one section per option | asking you to pick, with a copyable answer |
+| `guide` | no required sections; numbered steps work for a walkthrough | explaining how something works |
 | `map` | Overview, Git, Tree, Entry points, Largest files | orienting someone in a codebase |
 | `diagram` | Context, Diagram, Reading | showing a flow or a layout |
 | `graph` | Context, Graph, Reading | boxes and arrows between named things, drawn as SVG |
@@ -314,7 +315,8 @@ Exit `1` when nothing matches, `2` when the directory cannot be read.
 
 A deliberate subset, not full Markdown:
 
-- One `# ` title, `## ` sections, paragraphs, and bullet lists indented two spaces per level.
+- One `# ` title, `## ` sections, paragraphs, bullet lists and numbered lists (`1.`),
+  indented two spaces per level.
 - `###` subheadings, rendered as small caps labels.
 - Task lists: `- [x] done` and `- [ ] todo` become checkboxes; a section header shows
   `done/total` and the page gets a summary strip (`6/8 checks · 7 files · 1 risk`).

@@ -64,6 +64,7 @@ That block is shown as code because it sits in a fence. The same four lines outs
 - `plan` — Decisions, Rejected, Verification, Your move.
 - `summary` — What changed, Verification, Pending.
 - `selection` — one section per option, no required names.
+- `guide` — no required names; numbered steps for a walkthrough.
 - `review` — one section per finding, `F1 · Blocker · path:42`, plus Tests and Notes.
 - `map` — Overview, Git, Tree, Entry points, Largest files; `vistan map` fills it.
 - `diagram` — Context, Diagram, Reading.

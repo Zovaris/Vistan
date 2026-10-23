@@ -1083,3 +1083,12 @@ func TestTemplatesAreEmbedded(t *testing.T) {
 		}
 	}
 }
+
+func TestOrderedList(t *testing.T) {
+	html := renderHTML(parse(t, "# T\n\n## Steps\n\n1. first\n2. second\n\n- after\n"), tpl(t, "guide"), "x", "")
+	for _, want := range []string{"<ol>", "</ol>", `<li style="--l:0">first</li>`, "<ul>", "after"} {
+		if !strings.Contains(html, want) {
+			t.Fatalf("ordered list missing %q:\n%s", want, html)
+		}
+	}
+}
