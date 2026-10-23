@@ -45,7 +45,7 @@ pre code { background: none; padding: 0; font-size: 0.8rem; line-height: 1.5; }
 
 li.task { list-style: none; position: relative; padding-left: 1.5em;
   margin-left: calc(var(--l, 0) * 1.2em - 1.15em); }
-li.task .box { position: absolute; left: 0; top: 0.28em; width: 1.02em; height: 1.02em;
+li.task .box { position: absolute; left: 0; top: 0.49em; width: 1.6em; height: 1.6em;
   display: inline-flex; align-items: center; justify-content: center;
   border: 1px solid var(--rule); border-radius: 3px; font-size: 0.66em;
   color: transparent; font-family: ui-sans-serif, sans-serif; }
