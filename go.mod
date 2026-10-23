@@ -1,3 +1,3 @@
-module github.com/sthbryan/vistan
+module github.com/zovaris/vistan
 
 go 1.22

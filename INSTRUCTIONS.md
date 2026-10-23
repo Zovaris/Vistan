@@ -18,8 +18,8 @@ orchestrator can hand all the page work to a cheap sub-agent.
 
 ## Install
 
-The clone, the `go install`, the private-module flag and the Homebrew formula live in
-[README.md](README.md#install). From a checkout it is `go install ./cmd/vistan`.
+The `go install`, the release archives and the checkout path live in
+[README.md](README.md#install). From a checkout it is `make install`.
 
 ## Commands
 
@@ -376,7 +376,9 @@ one package. Splitting by layer would only add exported names and imports.
 
 ## Development
 
-`go test ./...`, `go vet ./...`, `gofmt -l .` and `golangci-lint run ./...`;
-[README.md](README.md#development) lists the same four and how `lefthook.yml` runs
-`gofmt` on the staged files at commit time and the four at push time. `vistan serve-child` is internal: it is the foreground process
+`make check` (gofmt, `go vet`, the tests) and `make lint`, which are the same four that
+CI runs; [README.md](README.md#development) explains how `lefthook.yml` runs `gofmt` on
+the staged files at commit time and the four at push time. The version comes from the
+git tag, so `make version` only tags and pushes: nothing in the tree stores it, and the
+release workflow builds the archives from that tag. `vistan serve-child` is internal: it is the foreground process
 that `serve` spawns, and it only serves the cache directory it is given.

@@ -8,30 +8,27 @@ project, and a history of everything you generated.
 
 ## Install
 
-From a checkout, which is the path that works today:
+```sh
+go install github.com/zovaris/vistan/cmd/vistan@latest
+```
+
+That builds the latest tagged release and drops `vistan` in `$GOBIN` — `~/go/bin`
+unless you set it, so keep that on your `PATH`. No clone, no build step.
+
+Or take an archive for macOS or Linux, on amd64 or arm64, from
+[Releases](https://github.com/zovaris/vistan/releases), unpack it and move `vistan` into
+your `PATH`. Every release publishes a `checksums.txt` next to the archives.
+
+From a checkout, for working on vistan itself:
 
 ```sh
-git clone https://github.com/sthbryan/vistan.git
+git clone https://github.com/zovaris/vistan.git
 cd vistan
-go install ./cmd/vistan     # into $GOBIN
+make install     # go install ./cmd/vistan
 ```
 
-Or build the binary in place:
-
-```sh
-go build -o vistan ./cmd/vistan
-```
-
-The repository is private for now, so the module path only resolves for someone with
-access and Go's git credentials:
-
-```sh
-GOPRIVATE=github.com/sthbryan go install github.com/sthbryan/vistan/cmd/vistan@latest
-```
-
-Once it is public, that becomes plain `go install github.com/sthbryan/vistan/cmd/vistan@latest`.
-`brew install sthbryan/tap/vistan` works once a release exists; the formula expects
-`vistan_x.y.z_darwin_arm64.tar.gz` and `..._darwin_amd64.tar.gz`.
+`vistan --version` prints the tag the binary was built from, or `dev` from a working
+tree.
 
 ## Use
 
@@ -163,13 +160,20 @@ vistan rerender --all         # rebuild every page that has a source
 ## Development
 
 ```sh
-go test ./...
-go vet ./...
-gofmt -l .
-golangci-lint run ./...
+make check      # gofmt, go vet and the tests
+make lint       # golangci-lint
 ```
 
 CI runs `golangci-lint` and, on Go 1.22 and the current release, the formatter, `vet`
 and the tests. `lefthook install` links the same four checks into `.git/hooks` once
 (`brew install lefthook` if you do not have it): a commit formats the Go files it
 touches and stages the result, and a push runs everything.
+
+## Releases
+
+The tag is the version: nothing in the repository stores it. `make version VERSION=0.1.0`
+checks the tree is clean on `main`, creates the annotated tag and pushes it;
+`make version BUMP=minor` raises the last tag instead, `make next-version` only prints
+what that would do, and `DRY=1` or `NO_PUSH=1` stop before touching the remote. Pushing
+the tag runs `.github/workflows/release.yml`, which repeats the checks, confirms the
+binary reports that tag, and lets goreleaser build and publish the archives.

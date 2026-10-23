@@ -50,7 +50,7 @@ func portFree(port int) bool {
 
 func startServer(cache string, port int) (int, error) {
 	if pid, known, ok := readPidFile(cache); ok && alive(pid) {
-		if runningVersion(cache) == version {
+		if runningVersion(cache) == versionString() {
 			return known, nil
 		}
 		// A server from an older build cannot answer /_answer or serve the new page. It
@@ -76,7 +76,7 @@ func startServer(cache string, port int) (int, error) {
 		return 0, err
 	}
 
-	if err := os.WriteFile(pidPath(cache), []byte(fmt.Sprintf("%d %d %s\n", cmd.Process.Pid, port, version)), 0o644); err != nil {
+	if err := os.WriteFile(pidPath(cache), []byte(fmt.Sprintf("%d %d %s\n", cmd.Process.Pid, port, versionString())), 0o644); err != nil {
 		return 0, err
 	}
 

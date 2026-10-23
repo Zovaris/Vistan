@@ -592,8 +592,24 @@ func TestVersionIsPrinted(t *testing.T) {
 	for _, args := range [][]string{{"version"}, {"--version"}} {
 		var code int
 		out := captureStdout(t, func() { code = Run(args) })
-		if code != 0 || out != "vistan "+version+"\n" {
+		if code != 0 || out != "vistan "+versionString()+"\n" {
 			t.Fatalf("Run(%v) = %d, %q; want 0 and the version", args, code, out)
+		}
+	}
+}
+
+func TestVersionFromBuildInfo(t *testing.T) {
+	cases := map[string]string{
+		"v0.1.0":                            "0.1.0",
+		"v1.2.3":                            "1.2.3",
+		"v0.1.0-rc1":                        "",
+		"0.0.0-20261023054514-9ee7305a5429": "",
+		"0.0.0-20261023054514-9ee7305a5429+dirty": "",
+		"(devel)": "",
+	}
+	for in, want := range cases {
+		if got := versionFromBuildInfo(in); got != want {
+			t.Fatalf("versionFromBuildInfo(%q) = %q, want %q", in, got, want)
 		}
 	}
 }

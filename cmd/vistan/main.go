@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/sthbryan/vistan/internal/vistan"
+	"github.com/zovaris/vistan/internal/vistan"
 )
 
 func main() {

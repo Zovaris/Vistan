@@ -1,0 +1,37 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: check
+        run: make check
+      - name: the tag and the binary agree
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          make build VERSION="$version"
+          ./vistan --version | grep -qx "vistan $version"
+      - uses: goreleaser/goreleaser-action@v6
+        with:
+          version: v2
+          args: release --clean
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

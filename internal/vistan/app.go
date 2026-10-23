@@ -12,8 +12,6 @@ import (
 	"strings"
 )
 
-const version = "0.2.0"
-
 func usage(w io.Writer) {
 	fmt.Fprintf(w, `usage: vistan <file.md> | serve <file.md> | stop | new <template> | templates
 
@@ -76,7 +74,7 @@ func Run(args []string) int {
 			return 0
 		}
 		if a == "--version" || (i == 0 && a == "version") {
-			fmt.Printf("vistan %s\n", version)
+			fmt.Printf("vistan %s\n", versionString())
 			return 0
 		}
 	}

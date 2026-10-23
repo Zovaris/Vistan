@@ -37,4 +37,4 @@ cmd.SysProcAttr = &syscall.SysProcAttr{Setsid: true}
 ## Links
 
 - [server.go](../server.go)
-- [issue #3: pages disappear when the command exits](https://github.com/sthbryan/vistan/issues/3)
+- [issue #3: pages disappear when the command exits](https://github.com/zovaris/vistan/issues/3)
