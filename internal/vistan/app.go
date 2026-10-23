@@ -31,7 +31,8 @@ func usage(w io.Writer) {
   stop         stop the local server
   new          print a template to stdout
   templates    list the templates
-  brief        print the brief for the agent that writes the pages
+  brief        print the rules for the agent that writes the pages; append it to
+               that agent's AGENTS.md or CLAUDE.md to teach it vistan
   --template   override the template declared in the document
 
 Templates: plan, summary, selection, review, map, diagram, graph, adr, spec,

@@ -54,6 +54,21 @@ vistan rm treemap             # delete saved pages
 vistan brief                  # instructions for the agent that writes the pages
 ```
 
+## Use it from an agent
+
+vistan is a plain CLI, so any agent that can run shell commands can use it: no plugin,
+no MCP server, no daemon to register. What it cannot guess is that vistan exists and
+what shape the pages have. The brief is inside the binary for exactly that:
+
+```sh
+vistan brief >> AGENTS.md      # or CLAUDE.md, .cursor/rules, whatever the harness reads
+```
+
+That appends the commands, the template table, the markup that becomes a component, the
+exit codes and the "do not" list. Do it once in the repository where the agent runs, not
+in this one. The short version, if you would rather write it by hand, is [the drop-in
+block in AGENTS.md](AGENTS.md#drop-in-block).
+
 ## Input
 
 Markdown, not JSON or TOML. The shape is the contract: a marker that picks the
@@ -102,9 +117,10 @@ vistan rerender --all         # rebuild every page that has a source
 
 - [INSTRUCTIONS.md](INSTRUCTIONS.md): every command, template, the renderer subset and
   the repository layout.
-- [AGENTS.md](AGENTS.md): the same thing for the next agent, plus a block to drop into
-  another repository's instructions.
-- `vistan brief`: the same rules, written for the agent that generates the pages.
+- [AGENTS.md](AGENTS.md): for an agent working on vistan itself, plus a block to drop
+  into another repository's instructions.
+- `vistan brief`: the same rules, written for the agent that generates the pages. This
+  is the text to paste into the harness that will use vistan; see above.
 
 ## Development
 
