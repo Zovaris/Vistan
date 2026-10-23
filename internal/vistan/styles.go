@@ -17,6 +17,7 @@ body { margin: 0; background: var(--paper); color: var(--ink);
 main { width: min(38rem, calc(100vw - 2.5rem)); margin: 0 auto; padding: 80px 0 96px; }
 h1 { margin: 0 0 8px; font-size: 2.05rem; line-height: 1.16; font-weight: 400;
   letter-spacing: -0.015em; text-wrap: balance; }
+h1, h2, h3, .opt .ttl { overflow-wrap: break-word; }
 .src { margin: 0; color: var(--muted); overflow-wrap: anywhere;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.72rem; }
 section { margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--rule); }
