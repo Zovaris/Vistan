@@ -160,4 +160,9 @@ vistan rerender --all         # rebuild every page that has a source
 go test ./...
 go vet ./...
 gofmt -l .
+golangci-lint run ./...
 ```
+
+CI runs `golangci-lint` and, on Go 1.22 and the current release, the formatter, `vet`
+and the tests. The same four checks run before a push: `lefthook install` links them
+into `.git/hooks` once (`brew install lefthook` if you do not have it).

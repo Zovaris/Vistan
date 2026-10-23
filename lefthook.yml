@@ -1,0 +1,14 @@
+# lefthook install links these into .git/hooks. The same four checks run in CI.
+
+pre-push:
+  parallel: true
+  jobs:
+    - name: gofmt
+      glob: "*.go"
+      run: test -z "$(gofmt -l .)" || { gofmt -l .; exit 1; }
+    - name: vet
+      run: go vet ./...
+    - name: lint
+      run: golangci-lint run ./...
+    - name: test
+      run: go test ./...

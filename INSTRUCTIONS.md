@@ -369,6 +369,7 @@ one package. Splitting by layer would only add exported names and imports.
 
 ## Development
 
-`go test ./...`, `go vet ./...` and `gofmt -l .`; [README.md](README.md#development)
-lists the same three. `vistan serve-child` is internal: it is the foreground process
+`go test ./...`, `go vet ./...`, `gofmt -l .` and `golangci-lint run ./...`;
+[README.md](README.md#development) lists the same four and how `lefthook.yml` runs them
+before a push. `vistan serve-child` is internal: it is the foreground process
 that `serve` spawns, and it only serves the cache directory it is given.
