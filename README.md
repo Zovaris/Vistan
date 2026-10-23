@@ -77,8 +77,16 @@ vistan brief >> AGENTS.md      # or CLAUDE.md, .cursor/rules, whatever the harne
 
 That appends the commands, the template table, the markup that becomes a component, the
 exit codes and the "do not" list. Do it once in the repository where the agent runs, not
-in this one. The short version, if you would rather write it by hand, is [the drop-in
-block in AGENTS.md](AGENTS.md#drop-in-block).
+in this one. The short version, if you would rather write it by hand:
+
+```markdown
+## Showing work to the human
+
+For anything longer than a two-line answer, use `vistan`. Write `page.md` from a
+template (`vistan new plan > page.md`), fill it, run `vistan serve page.md`, and give
+the human the printed `http://127.0.0.1:8765/...` URL. Run `vistan brief` for the
+sections and the markup. Do not paste the page or a raw diff into the chat.
+```
 
 ## The choice comes back
 
@@ -143,8 +151,6 @@ vistan rerender --all         # rebuild every page that has a source
 
 - [INSTRUCTIONS.md](INSTRUCTIONS.md): every command, template, the renderer subset and
   the repository layout.
-- [AGENTS.md](AGENTS.md): for an agent working on vistan itself, plus a block to drop
-  into another repository's instructions.
 - `vistan brief`: the same rules, written for the agent that generates the pages. This
   is the text to paste into the harness that will use vistan; see above.
 

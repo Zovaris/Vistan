@@ -39,6 +39,8 @@ Each page keeps its source Markdown next to it, so `vistan rerender plan` rebuil
 with the current templates, and `vistan rerender --all` rebuilds every page at once and the source can be read as text. `vistan history` groups them by project with a count and
 the last time each project wrote one, so a page from an hour ago is one command away.
 Use `vistan history --json` when you need the list as data instead of prose.
+A page is named after its file, not its project: two projects that both write `plan.md`
+overwrite each other, so name the page after the task.
 
 
 ## Pick the template
