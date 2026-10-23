@@ -217,6 +217,38 @@ func TestAnswerCommandWithoutAnAnswer(t *testing.T) {
 	}
 }
 
+func TestScanProjectGitSection(t *testing.T) {
+	if _, err := gitOutput(".", "--version"); err != nil {
+		t.Skip("git not available")
+	}
+
+	dir := t.TempDir()
+	if _, err := gitOutput(dir, "init", "-q"); err != nil {
+		t.Skipf("git init: %v", err)
+	}
+	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n"), 0o644)
+	gitOutput(dir, "add", "main.go")
+	if _, err := gitOutput(dir, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "first page", "--no-gpg-sign"); err != nil {
+		t.Skipf("git commit: %v", err)
+	}
+	os.WriteFile(filepath.Join(dir, "notes.md"), []byte("# note\n"), 0o644)
+
+	doc, err := scanProject(dir, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	section := doc.find("Git")
+	if section == nil {
+		t.Fatal("no Git section")
+	}
+	body := strings.Join(section.Body, "\n")
+	for _, want := range []string{"- `branch` `", "- `commit` `", "first page", "- 1 file changed", "notes.md"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("git section missing %q:\n%s", want, body)
+		}
+	}
+}
+
 func TestScanProject(t *testing.T) {
 	dir := t.TempDir()
 	os.WriteFile(filepath.Join(dir, "main.go"), []byte("package main\n\nfunc main() {}\n"), 0o644)

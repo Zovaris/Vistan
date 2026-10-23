@@ -130,7 +130,7 @@ the file. That is the hook an agent can check before showing you anything.
 | `plan` | Decisions, Rejected, Verification, Your move (plus optional Steps and Files) | agreeing on work before doing it |
 | `summary` | What changed, Verification, Pending | reporting work just finished |
 | `selection` | one section per option | asking you to pick, with a copyable answer |
-| `map` | Overview, Tree, Entry points, Largest files | orienting someone in a codebase |
+| `map` | Overview, Git, Tree, Entry points, Largest files | orienting someone in a codebase |
 | `diagram` | Context, Diagram, Reading | showing a flow or a layout |
 | `graph` | Context, Graph, Reading | boxes and arrows between named things, drawn as SVG |
 | `adr` | Status, Context, Decision, Consequences (plus Options considered and Links) | recording why a design choice was made |
@@ -258,6 +258,9 @@ gone.
   the largest top-level entries and a child box inherits its parent's colour. It is SVG
   drawn by the binary, not an image and not a dependency.
 - **Overview.** File count, total size, lines counted and a bar chart of the top languages by lines.
+- **Git.** The current branch, the last commit with its short hash and age, and the files that
+  are still uncommitted, each with its `M`/`A`/`D`/`?` letter. The section is left out
+  entirely outside a repository, or when `git` is not on the path.
 - **Tree.** Directories first with their file count and size, `--depth` levels deep
   (default 2), a maximum of 13 entries per directory and `N more` for the rest.
 - **Entry points.** `package.json` with its scripts, `go.mod` module, `Cargo.toml` and

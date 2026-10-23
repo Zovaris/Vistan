@@ -8,6 +8,10 @@ One line of what this project is. `vistan map <path>` fills this shape on its ow
 
 - Size, files and the languages that dominate.
 
+## Git
+
+- `branch` `main`, the last commit, and what is still uncommitted.
+
 ## Tree
 
 ```

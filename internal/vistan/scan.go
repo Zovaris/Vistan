@@ -74,11 +74,76 @@ func scanProject(root string, depth int) (*Doc, error) {
 	doc := &Doc{Title: filepath.Base(abs), Artifact: treemapSVG(files, filepath.Base(abs))}
 	doc.Sections = []Section{
 		{Name: "Overview", Body: overviewLines(files, stats, source)},
-		{Name: "Tree", Body: treeLines(filepath.Base(abs), files, depth)},
-		{Name: "Entry points", Body: entryLines(abs, files)},
-		{Name: "Largest files", Body: largestLines(files)},
 	}
+	if lines := gitLines(abs); len(lines) > 0 {
+		doc.Sections = append(doc.Sections, Section{Name: "Git", Body: lines})
+	}
+	doc.Sections = append(doc.Sections,
+		Section{Name: "Tree", Body: treeLines(filepath.Base(abs), files, depth)},
+		Section{Name: "Entry points", Body: entryLines(abs, files)},
+		Section{Name: "Largest files", Body: largestLines(files)},
+	)
 	return doc, nil
+}
+
+func gitLines(root string) []string {
+	branch, err := gitOutput(root, "rev-parse", "--abbrev-ref", "HEAD")
+	if err != nil {
+		return nil
+	}
+	branch = strings.TrimSpace(branch)
+	if branch == "HEAD" {
+		if short, err := gitOutput(root, "rev-parse", "--short", "HEAD"); err == nil {
+			branch = "detached at " + short
+		}
+	}
+	lines := []string{fmt.Sprintf("- `branch` `%s`", branch)}
+
+	if head, err := gitOutput(root, "log", "-1", "--format=%h%x09%s%x09%cr"); err == nil {
+		if parts := strings.Split(strings.TrimSpace(head), "\t"); len(parts) == 3 {
+			lines = append(lines, fmt.Sprintf("- `commit` `%s` %s · %s", parts[0], parts[1], parts[2]))
+		}
+	}
+
+	status, err := gitOutput(root, "status", "--porcelain")
+	if err != nil {
+		return lines
+	}
+	var changed []string
+	for _, line := range strings.Split(status, "\n") {
+		if len(line) < 4 {
+			continue
+		}
+		code := strings.TrimSpace(line[:2])
+		if code == "" {
+			continue
+		}
+		if strings.HasPrefix(code, "??") {
+			code = "?"
+		}
+		changed = append(changed, fmt.Sprintf("%c %s", code[0], strings.TrimSpace(line[3:])))
+	}
+	if len(changed) == 0 {
+		return append(lines, "- working tree clean")
+	}
+
+	lines = append(lines, fmt.Sprintf("- %d file%s changed", len(changed), pluralSuffix(len(changed))), "", "```")
+	for i, f := range changed {
+		if i == 12 {
+			lines = append(lines, fmt.Sprintf("… and %d more", len(changed)-12))
+			break
+		}
+		lines = append(lines, f)
+	}
+	return append(lines, "```")
+}
+
+func gitOutput(root string, args ...string) (string, error) {
+	out, err := exec.Command("git", append([]string{"-C", root}, args...)...).Output()
+	if err != nil {
+		return "", err
+	}
+	return string(out), nil
 }
 
 func collectFiles(root string) ([]scannedFile, string) {

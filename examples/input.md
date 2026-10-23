@@ -65,7 +65,7 @@ That block is shown as code because it sits in a fence. The same four lines outs
 - `summary` — What changed, Verification, Pending.
 - `selection` — one section per option, no required names.
 - `review` — one section per finding, `F1 · Blocker · path:42`, plus Tests and Notes.
-- `map` — Overview, Tree, Entry points, Largest files; `vistan map` fills it.
+- `map` — Overview, Git, Tree, Entry points, Largest files; `vistan map` fills it.
 - `diagram` — Context, Diagram, Reading.
 - `graph` — Context, Graph, Reading; the Graph section is an edge list, not a picture.
 - `adr` — Status, Context, Decision, Consequences.

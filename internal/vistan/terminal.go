@@ -27,6 +27,7 @@ var sectionColors = map[string]string{
 	"What changed":  ansiCyan,
 	"Pending":       ansiYell,
 	"Overview":      ansiCyan,
+	"Git":           ansiWhite,
 	"Tree":          ansiGreen,
 	"Entry points":  ansiMag,
 	"Largest files": ansiYell,
