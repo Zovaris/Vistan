@@ -78,7 +78,9 @@ aside.callout.warn, aside.callout.risk { background: #f6e9dd; border-left-color:
 aside.callout.decision { background: #e8ecf3; border-left-color: #8496b4; }
 aside.callout.question { background: #f3eef7; border-left-color: #a58ab8; }
 
-.tpl-review .finding { margin-top: 22px; padding: 16px 0 2px 16px; border-left: 2px solid var(--rule); }
+.tpl-review .finding { margin-top: 22px; padding: 16px 0 2px 16px; border-left: 2px solid var(--rule); cursor: pointer; }
+.tpl-review .finding:has(input.pick:checked) { border-left-color: var(--ink); }
+.tpl-review .finding input.pick { cursor: pointer; }
 .tpl-review .fhead { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.7em; }
 .tpl-review .apply { display: flex; align-items: center; gap: 0.45em; cursor: pointer;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; color: var(--muted); }
@@ -122,6 +124,8 @@ fieldset.opts { border: 0; padding: 0; margin: 36px 0 0; }
 .opt .pick input { margin: 0; accent-color: var(--ink); }
 .opt .key { font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.78rem; color: var(--muted); min-width: 1.1em; }
+.opt { cursor: pointer; }
+.opt input[name=opt] { cursor: pointer; }
 .opt .ttl { font-size: 1.05rem; }
 .opt .desc { margin: 6px 0 0 2.1rem; }
 .opt .desc > :first-child { margin-top: 0; }

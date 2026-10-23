@@ -136,6 +136,9 @@ func TestSelectionPage(t *testing.T) {
 	if !strings.Contains(html, `id="send"`) || !strings.Contains(html, "sendAnswer") {
 		t.Fatalf("send button missing")
 	}
+	if !strings.Contains(html, "section.opt") {
+		t.Fatalf("the whole option card is not clickable")
+	}
 	if !strings.Contains(html, `value="A: First"`) {
 		t.Fatalf("first option value missing")
 	}
@@ -469,6 +472,7 @@ func TestReviewFindings(t *testing.T) {
 		`<h2>Notes <span>1</span></h2>`,
 		`<strong>Fix:</strong> compare safely.`,
 		`id="ans"`,
+		`section.finding`,
 		`<b>1</b> finding`,
 		`<b>1</b> blocker`,
 	} {

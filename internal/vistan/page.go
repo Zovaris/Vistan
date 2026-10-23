@@ -137,6 +137,15 @@ function sync() {
   ans.value = picked.length ? 'Apply ' + picked.join(', ') : 'Reject all findings';
 }
 boxes.forEach(b => b.addEventListener('change', sync));
+document.querySelectorAll('section.finding').forEach(card => {
+  card.addEventListener('click', e => {
+    if (e.target.closest('input, a, button')) return;
+    if (window.getSelection().toString()) return;
+    const box = card.querySelector('input.pick');
+    box.checked = !box.checked;
+    box.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+});
 send.addEventListener('click', () => sendAnswer(ans.value, send, hint));
 </script>
 </section>
@@ -157,7 +166,7 @@ async function sendAnswer(value, button, hint) {
     });
     if (!res.ok) throw new Error(res.status);
     button.textContent = 'Sent';
-    hint.textContent = 'Sent. The agent reads it with: vistan answer ' + name;
+    hint.textContent = 'Sent. The agent reads it when you go back to the chat.';
   } catch (e) {
     button.disabled = false;
     hint.textContent = 'Could not reach the server. Run vistan serve again on this page.';
@@ -192,13 +201,24 @@ const selectionScript = `<div class="answer">
 const ans = document.getElementById('ans');
 const send = document.getElementById('send');
 const hint = document.getElementById('hint');
-for (const r of document.querySelectorAll('input[name=opt]')) {
-  r.addEventListener('change', () => {
-    ans.value = r.value;
-    send.disabled = false;
-    hint.textContent = 'Ready: ' + r.value;
-  });
+function pick(r) {
+  ans.value = r.value;
+  send.disabled = false;
+  hint.textContent = 'Ready: ' + r.value;
 }
+for (const r of document.querySelectorAll('input[name=opt]')) {
+  r.addEventListener('change', () => pick(r));
+}
+document.querySelectorAll('section.opt').forEach(card => {
+  const radio = card.querySelector('input[name=opt]');
+  if (!radio) return;
+  card.addEventListener('click', e => {
+    if (e.target.closest('input, a, button')) return;
+    if (window.getSelection().toString()) return;
+    radio.checked = true;
+    radio.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+});
 send.addEventListener('click', () => sendAnswer(ans.value, send, hint));
 </script>
 `

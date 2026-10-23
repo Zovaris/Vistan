@@ -85,7 +85,8 @@ A `selection` or a `review` page ends in one button. The human picks, presses **
 and the page posts the choice to the same local server, which writes it next to the
 page. The agent runs `vistan answer <name>` and gets `C: An index in ~/.vistan/` on
 stdout, or `no answer yet` and exit `1` if nobody chose. Nothing is pasted, nothing is
-copied through the clipboard.
+copied through the clipboard, and nothing waits: the command answers immediately, and
+the agent reads the choice on its next turn, when the human comes back to the chat.
 
 The endpoint is `POST /_answer/<page>` on the loopback server. It refuses a request
 whose `Origin` is not the page's own, so another site cannot answer on the human's

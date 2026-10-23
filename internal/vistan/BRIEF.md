@@ -88,10 +88,11 @@ code                       a code block
 
 A `selection` page and a `review` page end in one button. The human picks, presses
 Send, and the page posts the choice to the local server, which stores it next to the
-page. `vistan answer <name>` prints it. If it exits `1`, nobody has chosen yet — wait,
-ask the human whether the page is open, and read it again. Do not build a page whose
-only purpose is a yes/no you could ask in a sentence, and never ask for the answer in
-the chat after the page exists.
+page. `vistan answer <name>` prints it. If it exits `1`, nobody has chosen yet: do not
+wait for it, do not loop over it, and do not ask the human in the chat. Say the page is
+waiting for them, end the turn, and read the answer on the next turn. The command never
+blocks; the human is the one who returns. Do not build a page whose only purpose is a
+yes/no you could ask in a sentence.
 
 ## The graph and the decision log
 
