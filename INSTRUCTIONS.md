@@ -93,12 +93,14 @@ re-rendered later with the current templates (`vistan serve <dir>/plan.md`) or r
 plain text without parsing HTML. `map` is the exception: it has no source, so only the
 page is written.
 
-The oldest pages are deleted both by count and by age: at most `VISTAN_KEEP` pages
-(default 50, `0` disables the count) and nothing older than `VISTAN_KEEP_DAYS` (default
-30, `0` disables the age limit). A page and its source always leave together. Retention
-runs after a page is written, so the directory never grows without bound and `history`
-never links to a file that is gone. The count is the real disk bound; the age ceiling is what keeps
-a page from a quiet month from lingering forever.
+The oldest pages are deleted both by count and by age: at most `VISTAN_KEEP` pages per
+project (default 50, `0` disables the count) and nothing older than `VISTAN_KEEP_DAYS`
+(default 30, `0` disables the age limit). The count groups by the project tag in the
+page, which is why a loud repository cannot evict another one's pages. A page and its
+source always leave together. Retention runs after a page is written, so the directory
+never grows without bound and `history` never links to a file that is gone. The count is
+the real disk bound, at 50 pages per project; the age ceiling is what keeps a page from
+a quiet month from lingering forever.
 
 Terminal exit codes: `0` complete, `1` a section is missing or empty, `2` cannot read
 the file. That is the hook an agent can check before showing you anything.

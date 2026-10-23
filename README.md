@@ -139,7 +139,8 @@ rendered by vistan itself.
 
 The user state directory, not the project: `~/.local/state/vistan` on Linux,
 `~/Library/Application Support/vistan` on macOS, `%AppData%\vistan` on Windows. At most
-50 pages and 30 days; `VISTAN_KEEP` and `VISTAN_KEEP_DAYS` change that.
+50 pages per project and 30 days; `VISTAN_KEEP` and `VISTAN_KEEP_DAYS` change that, so a
+busy repository cannot evict the pages of another one.
 
 Each page keeps its source next to it (`plan.html` and `plan.md`), so it can be
 re-rendered with the current templates and read as plain text:

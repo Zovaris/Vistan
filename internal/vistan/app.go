@@ -43,7 +43,8 @@ spec, changelog.
 Declare one in the document with  <!-- vistan: map -->  or pass --template.
 
 Env: VISTAN_PORT (default 8765), VISTAN_NO_OPEN=1, VISTAN_CACHE, VISTAN_KEEP
-(default 50 pages; 0 keeps all), VISTAN_KEEP_DAYS (default 30; 0 keeps any age).
+(default 50 pages per project; 0 keeps all), VISTAN_KEEP_DAYS (default 30; 0 keeps any
+age).
 
 Pages are kept between runs, newest first, in the user state directory:
 ~/.local/state/vistan, ~/Library/Application Support/vistan or %%AppData%%\vistan.

@@ -2,6 +2,8 @@ package vistan
 
 import (
 	"fmt"
+	"html"
+	"io"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -34,6 +36,7 @@ func removeState(dir string) error {
 	}
 	return os.RemoveAll(abs)
 }
+
 func stateDir() string {
 	if dir := os.Getenv("VISTAN_CACHE"); dir != "" {
 		return dir
@@ -55,6 +58,7 @@ func stateDir() string {
 	}
 	return filepath.Join(home, ".local", "state", "vistan")
 }
+
 func keepLimit() int {
 	limit := 50
 	if v := os.Getenv("VISTAN_KEEP"); v != "" {
@@ -64,6 +68,7 @@ func keepLimit() int {
 	}
 	return limit
 }
+
 func keepDays() int {
 	days := 30
 	if v := os.Getenv("VISTAN_KEEP_DAYS"); v != "" {
@@ -73,6 +78,29 @@ func keepDays() int {
 	}
 	return days
 }
+
+// pageProject reads only the head of a page: the project tag is written before the
+// stylesheet, and a page can carry inlined images that make a full read expensive.
+func pageProject(dir, name string) string {
+	f, err := os.Open(filepath.Join(dir, name))
+	if err != nil {
+		return ""
+	}
+	defer f.Close()
+	head := make([]byte, 16<<10)
+	n, _ := io.ReadFull(f, head)
+	if n == 0 {
+		return ""
+	}
+	if m := projectTag.FindSubmatch(head[:n]); m != nil {
+		return html.UnescapeString(string(m[1]))
+	}
+	return ""
+}
+
+// keepPages prunes the state directory by age and by count, and the count is per
+// project: a repository that writes a page every minute must not evict the pages of
+// another one.
 func keepPages(dir string) {
 	limit, days := keepLimit(), keepDays()
 	if limit <= 0 && days <= 0 {
@@ -85,8 +113,9 @@ func keepPages(dir string) {
 	}
 
 	type page struct {
-		name string
-		mod  time.Time
+		name    string
+		project string
+		mod     time.Time
 	}
 	var pages []page
 	for _, entry := range entries {
@@ -94,16 +123,23 @@ func keepPages(dir string) {
 		if entry.IsDir() || !strings.HasSuffix(name, ".html") || isIndexName(name) {
 			continue
 		}
-		if info, err := entry.Info(); err == nil {
-			pages = append(pages, page{name, info.ModTime()})
+		info, err := entry.Info()
+		if err != nil {
+			continue
 		}
+		pages = append(pages, page{name: name, project: pageProject(dir, name), mod: info.ModTime()})
 	}
 	sort.Slice(pages, func(i, j int) bool { return pages[i].mod.After(pages[j].mod) })
+
+	kept := map[string]int{}
 	cutoff := time.Now().AddDate(0, 0, -days)
-	for i, p := range pages {
-		if limit > 0 && i >= limit {
-			removePage(dir, p.name)
-			continue
+	for _, p := range pages {
+		if limit > 0 {
+			if kept[p.project] >= limit {
+				removePage(dir, p.name)
+				continue
+			}
+			kept[p.project]++
 		}
 		if days > 0 && p.mod.Before(cutoff) {
 			removePage(dir, p.name)

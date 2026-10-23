@@ -727,6 +727,49 @@ func TestKeepPagesPrunesOldest(t *testing.T) {
 	}
 }
 
+func TestKeepPagesPrunesPerProject(t *testing.T) {
+	dir := t.TempDir()
+	now := time.Now()
+	write := func(name, project string, age time.Duration) {
+		html := fmt.Sprintf(`<head><meta name="vistan-project" content=%q></head>`, project)
+		path := filepath.Join(dir, name+".html")
+		if err := os.WriteFile(path, []byte(html), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, name+".md"), []byte("# x\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		stamp := now.Add(-age)
+		if err := os.Chtimes(path, stamp, stamp); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write("alpha-0", "alpha", 4*time.Hour)
+	write("alpha-1", "alpha", 3*time.Hour)
+	write("alpha-2", "alpha", 2*time.Hour)
+	write("beta-0", "beta", 5*time.Hour)
+	write("beta-1", "beta", 4*time.Hour)
+	write("beta-2", "beta", time.Hour)
+
+	t.Setenv("VISTAN_KEEP", "2")
+	t.Setenv("VISTAN_KEEP_DAYS", "0")
+	keepPages(dir)
+
+	for _, gone := range []string{"alpha-0", "beta-0"} {
+		if _, err := os.Stat(filepath.Join(dir, gone+".html")); !os.IsNotExist(err) {
+			t.Fatalf("%s should have been pruned", gone)
+		}
+	}
+	for _, kept := range []string{"alpha-1", "alpha-2", "beta-1", "beta-2"} {
+		if _, err := os.Stat(filepath.Join(dir, kept+".html")); err != nil {
+			t.Fatalf("%s should have been kept: %v", kept, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(dir, "beta-2.md")); err != nil {
+		t.Fatalf("source of a kept page was pruned")
+	}
+}
+
 func TestKeepPagesUnlimitedWhenZero(t *testing.T) {
 	dir := t.TempDir()
 	for i := 0; i < 3; i++ {
