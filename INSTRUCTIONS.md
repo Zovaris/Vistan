@@ -349,7 +349,8 @@ is never out of date.
 ```
 cmd/vistan/        the binary: main calls vistan.Run
 internal/vistan/   the program
-  app.go           commands, flags, state directory, retention
+  app.go           commands, flags, serve and the browser
+  state.go         the state directory, retention and clean
   doc.go           parser and template list
   page.go          the HTML page, findings, selection, project name
   markup.go        inline markup, body, callouts, changes, images
@@ -357,8 +358,10 @@ internal/vistan/   the program
   styles.go        the page CSS and the favicon
   graph.go         the edge list to SVG
   docs.go          the ADR and spec index
-  index.go         the saved pages, open and rm
-  scan.go          project scan and treemap
+  index.go         the saved pages, the history page, open and rm
+  rerender.go      rebuilding a page from its stored source
+  scan.go          the project scan
+  treemap.go       the top-level sizes as an SVG treemap
   server.go        the local server and the pid file
   templates/       the embedded templates
   BRIEF.md         the embedded brief
