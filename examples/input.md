@@ -59,7 +59,7 @@ One Markdown file and nothing else: no JSON, no TOML, no TOON, no schema to comp
 
 That block is shown as code because it sits in a fence. The same four lines outside a fence become four paragraphs, which is what a JSON document does when you hand it to vistan.
 
-## The ten shapes
+## The shapes
 
 - `plan` — Decisions, Rejected, Verification, Your move.
 - `summary` — What changed, Verification, Pending.

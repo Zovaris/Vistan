@@ -10,7 +10,7 @@ person using it.
 ## Why
 
 Chat output is a transcript. A plan, a summary or a decision has a shape, and the
-shape is what makes it readable. vistan takes a document that follows one of ten
+shape is what makes it readable. vistan takes a document that follows one of eleven
 shapes, checks it is complete, and renders it.
 
 `vistan brief` prints the instructions for the agent that writes those pages, so an
