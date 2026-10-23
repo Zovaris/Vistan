@@ -487,11 +487,62 @@ func treemapSVG(files []scannedFile, root string) string {
 		return ""
 	}
 	var b strings.Builder
-	b.WriteString(`<svg viewBox="0 0 720 300" role="img" aria-label="Where the bytes are">` + "\n")
+	b.WriteString(`<svg class="tm-map" viewBox="0 0 720 300" role="img" aria-label="Where the bytes are">` + "\n")
 	placeTM(tree, tmRect{0, 0, 720, 300}, 0, 0, &b)
 	b.WriteString("</svg>\n")
+	b.WriteString(treemapRows(tree))
 	b.WriteString(`<p class="tm-cap" aria-hidden="true">Hover a tile to see its name and size</p>` + "\n")
 	b.WriteString(treemapHover)
+	return b.String()
+}
+
+// treemapRows is the narrow-screen stand-in for the treemap: the same top-level
+// sizes as text and a bar, so no label ever scales below the body size.
+func treemapRows(root *tmNode) string {
+	kids := make([]*tmNode, len(root.kids))
+	copy(kids, root.kids)
+	if len(kids) == 0 {
+		return ""
+	}
+	sort.Slice(kids, func(i, j int) bool {
+		if kids[i].size != kids[j].size {
+			return kids[i].size > kids[j].size
+		}
+		return kids[i].name < kids[j].name
+	})
+	largest := kids[0].size
+	if largest <= 0 {
+		return ""
+	}
+
+	const maxRows = 7
+	shown := kids
+	var rest *tmNode
+	if len(kids) > maxRows {
+		rest = &tmNode{name: fmt.Sprintf("%d more", len(kids)-maxRows+1)}
+		for _, kid := range kids[maxRows-1:] {
+			rest.size += kid.size
+		}
+		shown = kids[:maxRows-1]
+	}
+
+	var b strings.Builder
+	b.WriteString("<ul class=\"tm-rows\">\n")
+	row := func(class, name string, size int64) {
+		fmt.Fprintf(&b, `<li%s><span class="nm">%s</span><span class="bar"><i style="width:%.1f%%"></i></span><span class="sz">%s</span></li>`+"\n",
+			class, html.EscapeString(name), float64(size)/float64(largest)*100, humanSize(size))
+	}
+	for _, kid := range shown {
+		name := kid.name
+		if len(kid.kids) > 0 {
+			name += "/"
+		}
+		row("", name, kid.size)
+	}
+	if rest != nil {
+		row(` class="more"`, rest.name, rest.size)
+	}
+	b.WriteString("</ul>\n")
 	return b.String()
 }
 

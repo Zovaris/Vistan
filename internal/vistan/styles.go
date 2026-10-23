@@ -173,6 +173,21 @@ h3:first-child { margin-top: 4px; }
 .art .tm-cap { margin: 6px 0 0; min-height: 1.2em; color: var(--muted);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.72rem;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tm-rows { display: none; }
+@media (max-width: 560px) {
+  .art .tm-map, .art .tm-cap { display: none; }
+  .tm-rows { display: block; list-style: none; margin: 0; padding: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; }
+  .tm-rows li { display: flex; align-items: center; gap: 0.6em; margin: 0 0 7px; }
+  .tm-rows .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; }
+  .tm-rows .bar { flex: none; width: 4.5em; height: 0.4em; background: var(--rule);
+    border-radius: 1px; }
+  .tm-rows .bar i { display: block; height: 100%; background: var(--ink);
+    opacity: 0.45; border-radius: 1px; }
+  .tm-rows .sz { flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .tm-rows .more .nm, .tm-rows .more .sz { color: var(--muted); }
+}
 figure { margin: 16px 0; }
 figure img { display: block; max-width: 100%; height: auto;
   border: 1px solid var(--rule); border-radius: 3px; }

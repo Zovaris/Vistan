@@ -258,7 +258,9 @@ gone.
   the largest top-level entries and a child box inherits its parent's colour. It is SVG
   drawn by the binary, not an image and not a dependency. Tiles too small for a label
   carry their name in a `<title>` and show it in a single line under the map on hover,
-  so the drawing never fills up with text.
+  so the drawing never fills up with text. Below 560px of viewport the drawing is
+  replaced by a list of the top-level entries with a proportional bar, because the
+  labels inside the SVG shrink with it.
 - **Overview.** File count, total size, lines counted and a bar chart of the top languages by lines.
 - **Git.** The current branch, the last commit with its short hash and age, and the files that
   are still uncommitted, each with its `M`/`A`/`D`/`?` letter. The section is left out
