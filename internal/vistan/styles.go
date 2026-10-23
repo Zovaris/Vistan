@@ -81,7 +81,7 @@ aside.callout.question { background: #f3eef7; border-left-color: #a58ab8; }
 .tpl-review .finding { margin-top: 22px; padding: 16px 0 2px 16px; border-left: 2px solid var(--rule); cursor: pointer; }
 .tpl-review .finding:has(input.pick:checked) { border-left-color: var(--ink); }
 .tpl-review .finding input.pick { cursor: pointer; }
-.tpl-review .fhead { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.7em; }
+.tpl-review .fhead { display: flex; align-items: center; flex-wrap: wrap; gap: 0.7em; }
 .tpl-review .apply { display: flex; align-items: center; gap: 0.45em; cursor: pointer;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.78rem; color: var(--muted); }
 .tpl-review .apply input { margin: 0; accent-color: var(--ink); }
