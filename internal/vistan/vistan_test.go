@@ -470,6 +470,57 @@ func TestBriefEndsWithTheUsage(t *testing.T) {
 	}
 }
 
+func TestCleanRemovesTheState(t *testing.T) {
+	state := filepath.Join(t.TempDir(), "state")
+	if err := os.MkdirAll(state, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(state, "plan.html"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("VISTAN_CACHE", state)
+
+	out := captureStdout(t, func() {
+		if code := Run([]string{"clean"}); code != 0 {
+			t.Fatalf("clean = %d, want 0", code)
+		}
+	})
+	if _, err := os.Stat(state); !os.IsNotExist(err) {
+		t.Fatalf("state directory survived clean")
+	}
+	if !strings.Contains(out, "removed") {
+		t.Fatalf("clean printed %q", out)
+	}
+
+	out = captureStdout(t, func() {
+		if code := Run([]string{"clean"}); code != 0 {
+			t.Fatalf("clean on an empty state = %d, want 0", code)
+		}
+	})
+	if !strings.Contains(out, "nothing to remove") {
+		t.Fatalf("second clean printed %q", out)
+	}
+}
+
+func TestRemoveStateRefusesTheWorkingDirectory(t *testing.T) {
+	dir := t.TempDir()
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(dir); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(wd)
+
+	if err := removeState("."); err == nil {
+		t.Fatalf("removeState deleted the working directory")
+	}
+	if _, err := os.Stat(dir); err != nil {
+		t.Fatalf("working directory is gone: %v", err)
+	}
+}
+
 func TestStateDirHonoursCacheEnv(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv("VISTAN_CACHE", dir)

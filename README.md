@@ -52,8 +52,16 @@ vistan history --json         # the same list as JSON, for an agent
 vistan open treemap           # reopen a page by name or prefix
 vistan rerender treemap       # rebuild a page from its stored source
 vistan rm treemap             # delete saved pages
+vistan clean                  # stop the server and delete every saved page
+vistan uninstall              # clean, then delete the binary
 vistan brief                  # instructions for the agent that writes the pages
 ```
+
+`clean` stops the server and removes the state directory, then says `nothing to
+remove` if there was nothing left. It refuses a path that holds more than vistan's own
+pages — a filesystem root, the home directory, the working directory — so a
+`VISTAN_CACHE` pointed at the wrong place is an error instead of a wipe. `uninstall`
+runs `clean` first and only then deletes the binary it is running from.
 
 ## Use it from an agent
 

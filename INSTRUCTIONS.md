@@ -57,6 +57,8 @@ vistan rerender --all            # rebuild every saved page that has a source
 vistan rm <name>                 # delete saved pages
 vistan brief                     # the instructions for the agent that writes pages
 vistan stop                      # stop the server
+vistan clean                     # stop the server and delete the saved pages
+vistan uninstall                 # clean, then delete the binary
 vistan new <template>            # print a template to stdout
 vistan templates                 # list templates
 vistan serve --template map x.md # override the declared template
@@ -67,6 +69,15 @@ vistan <command> --help         # the usage, from any command
 in the command line, so `vistan serve --help` is the same text as `vistan --help`.
 `vistan brief` prints the brief and then the same usage, so an agent that reads only
 that one command still sees the env vars and the command list.
+
+`clean` stops the server, then removes the state directory: the pages, their stored
+sources, the index and the pid file. Running it again prints `nothing to remove` and
+exits `0`. It refuses a path that holds more than vistan's pages — a filesystem root,
+the home directory, the working directory — because `VISTAN_CACHE` set to the wrong
+directory would otherwise turn a cleanup into a wipe. With `VISTAN_CACHE` unset it also
+deletes the old `$TMPDIR/vistan` directory. `uninstall` runs `clean` and then deletes
+the running binary; if the file cannot be unlinked (Windows locks a running `.exe`), it
+prints the path to remove by hand and exits `2`.
 
 `serve` starts a detached HTTP server on `127.0.0.1:8765` and prints the URL. It
 survives the command that launched it, because it is re-executed in its own session.

@@ -29,6 +29,8 @@ func usage(w io.Writer) {
   rerender --all   rebuild every saved page that has a stored source
   rm <name>    delete saved pages
   stop         stop the local server
+  clean        stop the server and delete the saved pages
+  uninstall    clean, then delete the binary
   new          print a template to stdout
   templates    list the templates
   brief        print the rules for the agent that writes the pages; append it to
@@ -58,7 +60,7 @@ func Run(args []string) int {
 	command := "show"
 	if len(args) > 0 {
 		switch args[0] {
-		case "serve", "stop", "new", "templates", "map", "docs", "index", "history", "open", "rerender", "rm", "brief", "serve-child":
+		case "serve", "stop", "clean", "uninstall", "new", "templates", "map", "docs", "index", "history", "open", "rerender", "rm", "brief", "serve-child":
 			command = args[0]
 			args = args[1:]
 		}
@@ -74,6 +76,10 @@ func Run(args []string) int {
 			stopServer(legacy, false)
 		}
 		return 0
+	case "clean":
+		return runClean()
+	case "uninstall":
+		return runUninstall()
 	case "templates":
 		for _, t := range templateList {
 			fmt.Println(t.Name)
@@ -112,6 +118,71 @@ func Run(args []string) int {
 	}
 
 	return show(command, args)
+}
+
+func runClean() int {
+	dir := stateDir()
+	if err := stopServer(dir, false); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 2
+	}
+	if legacy := filepath.Join(os.TempDir(), "vistan"); legacy != dir {
+		stopServer(legacy, false)
+		if os.Getenv("VISTAN_CACHE") == "" {
+			os.RemoveAll(legacy)
+		}
+	}
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		fmt.Println("nothing to remove")
+		return 0
+	}
+	if err := removeState(dir); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 2
+	}
+	fmt.Printf("removed %s\n", dir)
+	return 0
+}
+
+func runUninstall() int {
+	if code := runClean(); code != 0 {
+		return code
+	}
+	exe, err := os.Executable()
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		return 2
+	}
+	if err := os.Remove(exe); err != nil {
+		fmt.Fprintf(os.Stderr, "could not delete the binary: %v\nremove it by hand: %s\n", err, exe)
+		return 2
+	}
+	fmt.Printf("removed %s\n", exe)
+	return 0
+}
+
+// removeState deletes the state directory, but never a path that holds more than
+// vistan's pages: an empty VISTAN_CACHE, or one pointed at the wrong directory, must
+// not turn a cleanup into a wiped home.
+func removeState(dir string) error {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return err
+	}
+	abs = filepath.Clean(abs)
+	if filepath.Dir(abs) == abs {
+		return fmt.Errorf("refusing to delete %s: it is a filesystem root", abs)
+	}
+	if home, err := os.UserHomeDir(); err == nil && abs == filepath.Clean(home) {
+		return fmt.Errorf("refusing to delete %s: it is the home directory", abs)
+	}
+	if wd, err := os.Getwd(); err == nil && abs == wd {
+		return fmt.Errorf("refusing to delete %s: it is the working directory", abs)
+	}
+	if _, err := os.Stat(abs); os.IsNotExist(err) {
+		return nil
+	}
+	return os.RemoveAll(abs)
 }
 
 func stateDir() string {

@@ -25,6 +25,8 @@ vistan rm <name>                    # delete saved pages
 vistan templates                    # list template names
 vistan brief                        # this file
 vistan stop                         # stop the local server
+vistan clean                        # stop the server and delete every saved page
+vistan uninstall                    # clean, then delete the binary
 ```
 
 `serve` prints the URL and keeps a detached server on `127.0.0.1:8765`, so the page
